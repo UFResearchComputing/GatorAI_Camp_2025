@@ -1,88 +1,139 @@
-# menu.py
-
 import pygame
-import sys
-
+from settings import *
+from timer import Timer
 
 class Menu:
-    def __init__(self, screen):
-        self.screen = screen
-        self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font(None, 50)
-        self.options = ["Start Game", "Options", "Exit"]
-        self.selected = 0
-        self.menu_active = True  # Added to control the menu loop
+	def __init__(self, player, toggle_menu):
 
-    def display_menu(self):
-        while self.menu_active:
-            self.screen.fill((0, 0, 0))
-            self._handle_events()
-            self._draw_menu()
-            pygame.display.flip()
-            self.clock.tick(60)
+		# general setup
+		self.player = player
+		self.toggle_menu = toggle_menu
+		self.display_surface = pygame.display.get_surface()
+		self.font = pygame.font.Font('font/LycheeSoda.ttf', 30)
 
-    def _handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+		# options
+		self.width = 500  # Increase the width of the text boxes
+		self.space = 10
+		self.padding = 8
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    self.selected = (self.selected - 1) % len(self.options)
-                elif event.key == pygame.K_DOWN:
-                    self.selected = (self.selected + 1) % len(self.options)
-                elif event.key == pygame.K_RETURN:
-                    self._execute_option()
+		# entries
+		self.options = list(self.player.item_inventory.keys()) + [f"{seed} seed" for seed in self.player.seed_inventory.keys()]
+		self.sell_border = len(self.player.item_inventory) - 1
+		self.setup()
 
-    def _draw_menu(self):
-        for idx, option in enumerate(self.options):
-            color = (255, 255, 0) if idx == self.selected else (255, 255, 255)
-            text_surface = self.font.render(option, True, color)
-            x = self.screen.get_width() // 2 - text_surface.get_width() // 2
-            y = self.screen.get_height() // 2 + idx * 60
-            self.screen.blit(text_surface, (x, y))
+		# movement
+		self.index = 0
+		self.timer = Timer(200)
 
-    def _execute_option(self):
-        selected_option = self.options[self.selected]
-        if selected_option == "Start Game":
-            self.menu_active = False  # Exit the menu loop
-        elif selected_option == "Options":
-            self._options_menu()
-        elif selected_option == "Exit":
-            pygame.quit()
-            sys.exit()
+	def display_money(self):
+		text_surf = self.font.render(f'${self.player.money}', False, 'Black')
+		text_rect = text_surf.get_rect(midbottom = (SCREEN_WIDTH / 2,SCREEN_HEIGHT - 20))
 
-    def _options_menu(self):
-        options_active = True
-        back_option = ["Back to Main Menu", "Exit Game"]
-        selected = 0
+		pygame.draw.rect(self.display_surface,'White',text_rect.inflate(10,10),0,4)
+		self.display_surface.blit(text_surf,text_rect)
 
-        while options_active:
-            self.screen.fill((50, 50, 50))
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+	def setup(self):
 
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP:
-                        selected = (selected - 1) % len(back_option)
-                    elif event.key == pygame.K_DOWN:
-                        selected = (selected + 1) % len(back_option)
-                    elif event.key == pygame.K_RETURN:
-                        if back_option[selected] == "Back to Main Menu":
-                            options_active = False
-                        elif back_option[selected] == "Exit Game":
-                            pygame.quit()
-                            sys.exit()
+		# create the text surfaces
+		self.text_surfs = []
+		self.total_height = 0
 
-            for idx, option in enumerate(back_option):
-                color = (255, 255, 0) if idx == selected else (255, 255, 255)
-                text_surface = self.font.render(option, True, color)
-                x = self.screen.get_width() // 2 - text_surface.get_width() // 2
-                y = self.screen.get_height() // 2 + idx * 60
-                self.screen.blit(text_surface, (x, y))
+		for item in self.options:
+			text_surf = self.font.render(item, False, 'Black')
+			self.text_surfs.append(text_surf)
+			self.total_height += text_surf.get_height() + (self.padding * 2)
 
-            pygame.display.flip()
-            self.clock.tick(60)
+		self.total_height += (len(self.text_surfs) - 1) * self.space
+		self.menu_top = SCREEN_HEIGHT / 2 - self.total_height / 2
+		self.main_rect = pygame.Rect(SCREEN_WIDTH / 2 - self.width / 2,self.menu_top,self.width,self.total_height)
+
+		# buy / sell text surface
+		self.buy_text = self.font.render('buy',False,'Black')
+		self.sell_text =  self.font.render('sell',False,'Black')
+
+	def input(self):
+		keys = pygame.key.get_pressed()
+		self.timer.update()
+
+		if keys[pygame.K_ESCAPE]:
+			self.toggle_menu()
+
+		if not self.timer.active:
+			if keys[pygame.K_UP]:
+				self.index -= 1
+				self.timer.activate()
+
+			if keys[pygame.K_DOWN]:
+				self.index += 1
+				self.timer.activate()
+
+			if keys[pygame.K_SPACE]:
+				self.timer.activate()
+
+				# get item
+				current_item = self.options[self.index]
+
+				# sell
+				if self.index <= self.sell_border:
+					if self.player.item_inventory[current_item] > 0:
+						self.player.item_inventory[current_item] -= 1
+						self.player.money += SALE_PRICES[current_item]
+
+				# buy
+				else:
+					seed_name = current_item.split()[0]
+					seed_price = PURCHASE_PRICES[seed_name]
+					if self.player.money >= seed_price:
+						self.player.seed_inventory[seed_name] += 1
+						self.player.money -= seed_price
+
+		# clamp the values
+		if self.index < 0:
+			self.index = len(self.options) - 1
+		if self.index > len(self.options) - 1:
+			self.index = 0
+
+	def show_entry(self, text_surf, amount, top, selected, item_index):
+
+		# background
+		bg_rect = pygame.Rect(self.main_rect.left,top,self.width,text_surf.get_height() + (self.padding * 2))
+		pygame.draw.rect(self.display_surface, 'White',bg_rect, 0, 4)
+
+		# text
+		text_rect = text_surf.get_rect(midleft = (self.main_rect.left + 20,bg_rect.centery))
+		self.display_surface.blit(text_surf, text_rect)
+
+		# amount
+		amount_surf = self.font.render(str(amount), False, 'Black')
+		amount_rect = amount_surf.get_rect(midright = (self.main_rect.right - 20,bg_rect.centery))
+		self.display_surface.blit(amount_surf, amount_rect)
+
+		# price
+		if item_index <= self.sell_border:
+			price = SALE_PRICES[self.options[item_index]]
+		else:
+			seed_name = self.options[item_index].split()[0]
+			price = PURCHASE_PRICES[seed_name]
+		price_surf = self.font.render(f'${price}', False, 'Black')
+		price_rect = price_surf.get_rect(midright = (self.main_rect.right - 100, bg_rect.centery))
+		self.display_surface.blit(price_surf, price_rect)
+
+		# selected
+		if selected:
+			pygame.draw.rect(self.display_surface,'black',bg_rect,4,4)
+			if item_index <= self.sell_border: # sell
+				pos_rect = self.sell_text.get_rect(midleft = (self.main_rect.left + 200,bg_rect.centery))  # Adjust position
+				self.display_surface.blit(self.sell_text,pos_rect)
+			else: # buy
+				pos_rect = self.buy_text.get_rect(midleft = (self.main_rect.left + 200,bg_rect.centery))  # Adjust position
+				self.display_surface.blit(self.buy_text,pos_rect)
+
+	def update(self):
+		self.input()
+		self.display_money()
+
+		for text_index, text_surf in enumerate(self.text_surfs):
+			top = self.main_rect.top + text_index * (text_surf.get_height() + (self.padding * 2) + self.space)
+			amount_list = list(self.player.item_inventory.values()) + list(self.player.seed_inventory.values())
+			amount = amount_list[text_index]
+			self.show_entry(text_surf, amount, top, self.index == text_index, text_index)
