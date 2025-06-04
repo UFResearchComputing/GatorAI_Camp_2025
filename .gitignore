@@ -1,2 +1,6 @@
 # ignore rars
 /rars/
+
+#ignore python cache
+__pycache__/
+__pycache__
