@@ -31,9 +31,11 @@ class Overlay:
             os.path.join(overlay_path, "Keyboard Extras.png")
         ).convert_alpha()
         # extract space bar from coordinates (40, 80) to (60, 120)
-        self.spacebar_surf = keyboard_extras.subsurface(
+        spacebar_original = keyboard_extras.subsurface(
             pygame.Rect(64, 32, 32, 16)  # (x, y, width, height) in pixels
         )
+        # scale the spacebar to be twice as large
+        self.spacebar_surf = pygame.transform.scale(spacebar_original, (64, 32))
 
     def display(self):
 
@@ -44,7 +46,7 @@ class Overlay:
 
         # space bar key next to tool (positioned to the right of the tool icon)
         spacebar_rect = self.spacebar_surf.get_rect(
-            midleft=(tool_rect.right // 2, tool_rect.centery - 50)
+            midleft=(tool_rect.right // 3, tool_rect.centery - 50)
         )
         self.display_surface.blit(self.spacebar_surf, spacebar_rect)
 
