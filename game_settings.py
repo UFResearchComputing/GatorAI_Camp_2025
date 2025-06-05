@@ -10,6 +10,7 @@ DEFAULT_SETTINGS = {"master_volume": 0.8, "music_volume": 0.7, "sfx_volume": 0.8
 # Global references for audio management
 current_level = None
 current_player = None
+current_overlay = None
 
 
 def load_settings():
@@ -62,6 +63,12 @@ def set_current_player(player_instance):
     """Set the current player instance for audio management"""
     global current_player
     current_player = player_instance
+
+
+def set_current_overlay(overlay_instance):
+    """Set the current overlay instance for audio management"""
+    global current_overlay
+    current_overlay = overlay_instance
 
 
 def refresh_all_audio():

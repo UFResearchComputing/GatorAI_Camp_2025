@@ -1,6 +1,7 @@
 import pygame
 from settings import *
 import os
+import game_settings
 
 
 class Overlay:
@@ -35,16 +36,35 @@ class Overlay:
         keyboard_extras = pygame.image.load(
             os.path.join(overlay_path, "Keyboard Extras.png")
         ).convert_alpha()
+
+        keyboard_letters = pygame.image.load(
+            os.path.join(overlay_path, "Keyboard Letters and Symbols.png")
+        ).convert_alpha()
+
         spacebar_original = keyboard_extras.subsurface(
             pygame.Rect(64, 32, 32, 16)  # (x, y, width, height) in pixels
-        )
-        # scale the spacebar to be twice as large
+        )  # scale the spacebar to be twice as large
         self.spacebar_surf = pygame.transform.scale(spacebar_original, (64, 32))
 
         ctrl_key_original = keyboard_extras.subsurface(
             pygame.Rect(0, 32, 32, 16)  # (x, y, width, height) in pixels
         )
         self.ctrl_key_surf = pygame.transform.scale(ctrl_key_original, (64, 32))
+
+        # load the letter "Q" for tool switching
+        q_key_original = keyboard_letters.subsurface(
+            pygame.Rect(0, 64, 16, 16)  # (x, y, width, height) in pixels
+        )
+        self.q_key_surf = pygame.transform.scale(q_key_original, (32, 32))
+
+        # load the letter "E" for seed switching
+        e_key_original = keyboard_letters.subsurface(
+            pygame.Rect(64, 32, 16, 16)  # (x, y, width, height) in pixels
+        )
+        self.e_key_surf = pygame.transform.scale(e_key_original, (32, 32))
+
+        # register this overlay globally for audio updates
+        game_settings.set_current_overlay(self)
 
     def display(self):
 
@@ -77,6 +97,18 @@ class Overlay:
             midbottom=(spacebar_rect.centerx - 12, spacebar_rect.top - 5)
         )
         self.display_surface.blit(self.rotate_surf, rotate_rect_spacebar)
+
+        # q key to the right of the rotate icon above the space bar
+        q_key_rect = self.q_key_surf.get_rect(
+            midleft=(rotate_rect_spacebar.right + 5, rotate_rect_spacebar.centery)
+        )
+        self.display_surface.blit(self.q_key_surf, q_key_rect)
+
+        # e key to the right of the rotate icon above the ctrl key
+        e_key_rect = self.e_key_surf.get_rect(
+            midleft=(rotate_rect.centerx + 10, rotate_rect.centery)
+        )
+        self.display_surface.blit(self.e_key_surf, e_key_rect)
 
         # seeds
         seed_surf = self.seeds_surf[self.player.selected_seed]
