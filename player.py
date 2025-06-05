@@ -4,6 +4,8 @@ from support import *
 from timer import Timer
 import os
 
+import game_settings
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(
@@ -69,7 +71,17 @@ class Player(pygame.sprite.Sprite):
         # sound
         base_path = os.path.dirname(os.path.abspath(__file__))
         self.watering = pygame.mixer.Sound(os.path.join(base_path, "audio/water.mp3"))
-        self.watering.set_volume(0.2)
+        self.update_audio_volumes()
+        # Register this player globally for audio updates
+        game_settings.set_current_player(self)
+
+    def update_audio_volumes(self):
+        """Update audio volumes based on current settings"""
+        master_vol = game_settings.get("master_volume")
+        sfx_vol = game_settings.get("sfx_volume")
+
+        # Apply SFX volume (master * sfx)
+        self.watering.set_volume(master_vol * sfx_vol)
 
     def use_tool(self):
         if self.selected_tool == "hoe":
@@ -82,6 +94,8 @@ class Player(pygame.sprite.Sprite):
 
         if self.selected_tool == "water":
             self.soil_layer.water(self.target_pos)
+            # Update volume before playing sound
+            self.update_audio_volumes()
             self.watering.play()
 
     def get_target_pos(self):

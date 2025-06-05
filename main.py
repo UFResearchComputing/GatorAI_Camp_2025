@@ -1,4 +1,5 @@
 from installer import install
+
 install("pygame")
 install("pytmx")
 
@@ -8,14 +9,21 @@ from settings import *
 from level import Level
 from main_menu import MainMenu
 from character_screen import CharacterScreen
+import game_settings
+
 
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()  # Initialize mixer for audio
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("PyDew Valley: GAIC 25")
         self.clock = pygame.time.Clock()
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+        # Initialize settings first
+        game_settings.load_settings()
+
         self.level = None
         self.main_menu = MainMenu(self.start_game)
         self.character_screen = None
@@ -47,6 +55,7 @@ class Game:
                 if self.character_screen and self.character_screen.visible:
                     self.character_screen.update()
             pygame.display.update()
+
 
 if __name__ == "__main__":
     game = Game()

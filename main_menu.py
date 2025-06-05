@@ -3,6 +3,7 @@ from settings import *
 import sys
 import os
 from timer import Timer
+from settings_menu import SettingsMenu
 
 
 class MainMenu:
@@ -13,7 +14,7 @@ class MainMenu:
         self.start_game = start_game
         self.options = ["Start Game", "Credits", "Options", "Quit"]
         self.selected_index = 0
-        self.state = "main"  # main, credits
+        self.state = "main"  # main, credits, settings
 
         # Load the "Corn" graphic
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +24,8 @@ class MainMenu:
 
         # Timer for input delay
         self.input_timer = Timer(200)
+        # Settings menu
+        self.settings_menu = SettingsMenu()
 
     def display(self):
         self.display_surface.fill("black")
@@ -31,6 +34,12 @@ class MainMenu:
             self.display_main_menu()
         elif self.state == "credits":
             self.display_credits()
+        elif self.state == "settings":
+            # Settings menu handles its own display
+            result = self.settings_menu.update()
+            if result == "back":
+                self.state = "main"
+                self.input_timer.activate()
 
     def display_main_menu(self):
         # display the title: "PyDew Valley: GAIC 25" with double the font size
@@ -103,6 +112,7 @@ class MainMenu:
             self.handle_main_input(keys)
         elif self.state == "credits":
             self.handle_credits_input(keys)
+        # Settings input is handled in the display method
 
     def handle_main_input(self, keys):
         if keys[pygame.K_UP]:
@@ -114,8 +124,10 @@ class MainMenu:
         elif keys[pygame.K_RETURN]:
             if self.selected_index == 0:  # Start Game
                 self.start_game()
-            elif self.selected_index == 1:  # Credits
                 self.state = "credits"
+                self.input_timer.activate()
+            elif self.selected_index == 2:  # Options
+                self.state = "settings"
                 self.input_timer.activate()
             elif self.selected_index == 3:  # Quit
                 pygame.quit()
