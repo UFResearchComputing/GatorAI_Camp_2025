@@ -33,6 +33,12 @@ class Overlay:
         ).convert_alpha()
         self.rotate_surf = pygame.transform.scale(rotate_graphic, (20, 20))
 
+        # load the inventory icon
+        inventory_icon = pygame.image.load(
+            os.path.join(overlay_path, "backpack.png")
+        ).convert_alpha()
+        self.inventory_surf = pygame.transform.scale(inventory_icon, (64, 64))
+
         keyboard_extras = pygame.image.load(
             os.path.join(overlay_path, "Keyboard Extras.png")
         ).convert_alpha()
@@ -62,6 +68,12 @@ class Overlay:
             pygame.Rect(64, 32, 16, 16)  # (x, y, width, height) in pixels
         )
         self.e_key_surf = pygame.transform.scale(e_key_original, (32, 32))
+
+        # load the letter "I" for inventory
+        i_key_original = keyboard_letters.subsurface(
+            pygame.Rect(0, 48, 16, 16)  # (x, y, width, height) in pixels
+        )
+        self.i_key_surf = pygame.transform.scale(i_key_original, (32, 32))
 
         # register this overlay globally for audio updates
         game_settings.set_current_overlay(self)
@@ -114,3 +126,16 @@ class Overlay:
         seed_surf = self.seeds_surf[self.player.selected_seed]
         seed_rect = seed_surf.get_rect(midbottom=OVERLAY_POSITIONS["seed"])
         self.display_surface.blit(seed_surf, seed_rect)
+
+        # inventory icon on the bottom right corner
+        inventory_rect = self.inventory_surf.get_rect(
+            bottomright=(SCREEN_WIDTH - 20, SCREEN_HEIGHT - 20)
+        )
+
+        # i key to the left of the inventory icon
+        i_key_rect = self.i_key_surf.get_rect(
+            midright=(inventory_rect.left - 10, inventory_rect.centery)
+        )
+        self.display_surface.blit(self.i_key_surf, i_key_rect)
+
+        self.display_surface.blit(self.inventory_surf, inventory_rect)
