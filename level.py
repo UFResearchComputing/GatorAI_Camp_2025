@@ -29,7 +29,7 @@ from transition import Transition
 from soil import SoilLayer
 from sky import Rain, Sky
 from random import randint
-from menu import Menu
+from trader_menu import TraderMenu
 import game_settings
 import os
 
@@ -104,11 +104,9 @@ class Level:
         self.rain = Rain(self.all_sprites)
         self.raining = randint(0, 10) > 7  # 30% chance of rain
         self.soil_layer.raining = self.raining  # Tell soil system about rain
-        self.sky = Sky()
-
-        # SHOP SYSTEM
+        self.sky = Sky()  # SHOP SYSTEM
         # Create the trading menu system
-        self.menu = Menu(self.player, self.toggle_shop)
+        self.menu = TraderMenu(self.player, self.toggle_shop)
         self.shop_active = False
 
         # AUDIO SYSTEM
