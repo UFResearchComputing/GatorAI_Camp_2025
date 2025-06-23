@@ -17,6 +17,7 @@ from installer import install
 # Install required packages if they're not already installed
 install("pygame")  # Game development library
 install("pytmx")  # Map loading library
+install("kaggle")  # Dataset library
 
 import pygame  # Main game development library
 import sys  # System operations
