@@ -1,4 +1,24 @@
-import pygame 
+"""
+PyDew Valley - Level Manager Module
+==================================
+This module manages the entire game world including map loading, sprite management,
+and game systems coordination. This is one of the most complex files in our game!
+
+Educational Concepts Covered:
+- File I/O and map loading from external files
+- Sprite group management and organization
+- Camera systems for following the player
+- Game state management
+- Audio system integration
+- Weather and environmental systems
+- Collision detection systems
+- Object-oriented design patterns
+
+This file demonstrates advanced game programming concepts and shows how
+different game systems work together to create a complete game experience.
+"""
+
+import pygame
 from settings import *
 from player import Player
 from overlay import Overlay
@@ -9,190 +29,459 @@ from transition import Transition
 from soil import SoilLayer
 from sky import Rain, Sky
 from random import randint
-from menu import Menu
+from trader_menu import TraderMenu
+import game_settings
 import os
 
+
 class Level:
-	def __init__(self):
+    """
+    Level Class - The Game World Manager
+    ===================================
+    This class is responsible for managing the entire game world including:
+    - Loading and setting up the game map from external files
+    - Managing all game objects (sprites) in organized groups
+    - Handling the camera system that follows the player
+    - Coordinating different game systems (weather, audio, shops, etc.)
+    - Managing game state transitions (day/night, sleeping, etc.)
 
-		# get the display surface
-		self.display_surface = pygame.display.get_surface()
+    EDUCATIONAL CONCEPTS:
+    - Complex system architecture
+    - Sprite group management
+    - File loading and parsing
+    - Camera and viewport systems
+    - Audio system integration
+    - Game state management
+    - Object coordination
 
-		# sprite groups
-		self.all_sprites = CameraGroup()
-		self.collision_sprites = pygame.sprite.Group()
-		self.tree_sprites = pygame.sprite.Group()
-		self.interaction_sprites = pygame.sprite.Group()
+    This demonstrates how large game projects organize and manage complexity!
+    """
 
-		self.soil_layer = SoilLayer(self.all_sprites, self.collision_sprites)
-		self.setup()
-		self.overlay = Overlay(self.player)
-		self.transition = Transition(self.reset, self.player)
+    def __init__(self):
+        """
+        Initialize the Game World
+        ========================
+        Sets up all the game systems, loads the map, creates sprite groups,
+        and initializes audio, weather, and other game systems.
 
-		# sky
-		self.rain = Rain(self.all_sprites)
-		self.raining = randint(0,10) > 7
-		self.soil_layer.raining = self.raining
-		self.sky = Sky()
+        EDUCATIONAL CONCEPTS:
+        - Constructor method with complex initialization
+        - Multiple system initialization
+        - Dependency management between objects
+        - Audio system setup
+        - Random number generation for game variety
+        """
+        # Get the main display surface (the game window)
+        self.display_surface = pygame.display.get_surface()
 
-		# shop
-		self.menu = Menu(self.player, self.toggle_shop)
-		self.shop_active = False
+        # SPRITE GROUP ORGANIZATION
+        # Different sprite groups help us organize and manage game objects efficiently
+        self.all_sprites = CameraGroup()  # Custom camera-following sprite group
+        self.collision_sprites = pygame.sprite.Group()  # Objects that block movement
+        self.tree_sprites = pygame.sprite.Group()  # Trees that can be chopped
+        self.interaction_sprites = (
+            pygame.sprite.Group()
+        )  # Objects player can interact with
 
-		# music
-		base_path = os.path.dirname(os.path.abspath(__file__))
-		self.success = pygame.mixer.Sound(os.path.join(base_path, 'audio/success.wav'))
-		self.success.set_volume(0.3)
-		self.music = pygame.mixer.Sound(os.path.join(base_path, 'audio/music.mp3'))
-		self.music.play(loops = -1)
+        # GAME SYSTEMS INITIALIZATION
+        # Create the soil system for farming mechanics
+        self.soil_layer = SoilLayer(self.all_sprites, self.collision_sprites)
 
-	def setup(self):
-		tmx_data = load_pygame('data/map.tmx')
+        # Load the game map and create all game objects
+        self.setup()
 
-		# house 
-		for layer in ['HouseFloor', 'HouseFurnitureBottom']:
-			for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
-				Generic((x * TILE_SIZE,y * TILE_SIZE), surf, self.all_sprites, LAYERS['house bottom'])
+        # Create the UI overlay (shows player inventory, tools, etc.)
+        self.overlay = Overlay(self.player)
 
-		for layer in ['HouseWalls', 'HouseFurnitureTop']:
-			for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
-				Generic((x * TILE_SIZE,y * TILE_SIZE), surf, self.all_sprites)
+        # Create the day/night transition system
+        self.transition = Transition(self.reset, self.player)
 
-		# Fence
-		for x, y, surf in tmx_data.get_layer_by_name('Fence').tiles():
-			Generic((x * TILE_SIZE,y * TILE_SIZE), surf, [self.all_sprites, self.collision_sprites])
+        # Register this level globally for audio updates
+        game_settings.set_current_level(self)
 
-		# water 
-		water_frames = import_folder('graphics/water')
-		for x, y, surf in tmx_data.get_layer_by_name('Water').tiles():
-			Water((x * TILE_SIZE,y * TILE_SIZE), water_frames, self.all_sprites)
+        # WEATHER SYSTEM
+        # Create rain and sky systems for environmental variety
+        self.rain = Rain(self.all_sprites)
+        self.raining = randint(0, 10) > 7  # 30% chance of rain
+        self.soil_layer.raining = self.raining  # Tell soil system about rain
+        self.sky = Sky()  # SHOP SYSTEM
+        # Create the trading menu system
+        self.menu = TraderMenu(self.player, self.toggle_shop)
+        self.shop_active = False
 
-		# trees 
-		for obj in tmx_data.get_layer_by_name('Trees'):
-			Tree(
-				pos = (obj.x, obj.y), 
-				surf = obj.image, 
-				groups = [self.all_sprites, self.collision_sprites, self.tree_sprites], 
-				name = obj.name,
-				player_add = self.player_add)
+        # AUDIO SYSTEM
+        # Load and set up game sounds and music
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        self.success = pygame.mixer.Sound(os.path.join(base_path, "audio/success.wav"))
+        self.music = pygame.mixer.Sound(os.path.join(base_path, "audio/music.mp3"))
 
-		# wildflowers 
-		for obj in tmx_data.get_layer_by_name('Decoration'):
-			WildFlower((obj.x, obj.y), obj.image, [self.all_sprites, self.collision_sprites])
+        # Apply volume settings from game settings and start background music
+        self.update_audio_volumes()
+        self.music.play(loops=-1)  # -1 means loop forever
 
-		# collion tiles
-		for x, y, surf in tmx_data.get_layer_by_name('Collision').tiles():
-			Generic((x * TILE_SIZE, y * TILE_SIZE), pygame.Surface((TILE_SIZE, TILE_SIZE)), self.collision_sprites)
+    def setup(self):
+        """
+        Load and Set Up the Game Map
+        ============================
+        This method loads the game map from an external TMX file and creates
+        all the game objects (sprites) based on the map data.
 
-		# Player 
-		for obj in tmx_data.get_layer_by_name('Player'):
-			if obj.name == 'Start':
-				self.player = Player(
-					pos = (obj.x,obj.y), 
-					group = self.all_sprites, 
-					collision_sprites = self.collision_sprites,
-					tree_sprites = self.tree_sprites,
-					interaction = self.interaction_sprites,
-					soil_layer = self.soil_layer,
-					toggle_shop = self.toggle_shop)
-			
-			if obj.name == 'Bed':
-				Interaction((obj.x,obj.y), (obj.width,obj.height), self.interaction_sprites, obj.name)
+        EDUCATIONAL CONCEPTS:
+        - File I/O and external data loading
+        - Map/tilemap systems in games
+        - Loops within loops (nested iteration)
+        - Object creation from data
+        - Coordinate system mapping
+        - Layer-based rendering systems
+        """
+        # Load the map data from an external TMX file
+        # TMX is a standard format for tile-based game maps
+        tmx_data = load_pygame("data/map.tmx")
 
-			if obj.name == 'Trader':
-				Interaction((obj.x,obj.y), (obj.width,obj.height), self.interaction_sprites, obj.name)
+        # HOUSE LAYERS - Create house floor and furniture
+        # We process different layers separately to control rendering order
+        for layer in ["HouseFloor", "HouseFurnitureBottom"]:
+            for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
+                Generic(
+                    (
+                        x * TILE_SIZE,
+                        y * TILE_SIZE,
+                    ),  # Convert tile coordinates to pixels
+                    surf,  # The image/surface for this tile
+                    self.all_sprites,  # Add to main sprite group
+                    LAYERS["house bottom"],  # Set rendering layer
+                )
 
+        # House walls and top furniture (rendered above the player)
+        for layer in ["HouseWalls", "HouseFurnitureTop"]:
+            for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
+                Generic((x * TILE_SIZE, y * TILE_SIZE), surf, self.all_sprites)
 
-		Generic(
-			pos = (0,0),
-			surf = pygame.image.load('graphics/world/ground.png').convert_alpha(),
-			groups = self.all_sprites,
-			z = LAYERS['ground'])
+        # FENCE OBJECTS - Create fence barriers
+        # These are both visual and collision objects
+        for x, y, surf in tmx_data.get_layer_by_name("Fence").tiles():
+            Generic(
+                (x * TILE_SIZE, y * TILE_SIZE),
+                surf,
+                [self.all_sprites, self.collision_sprites],  # Add to multiple groups
+            )
 
-	def player_add(self,item):
+        # WATER OBJECTS - Create animated water tiles
+        water_frames = import_folder("graphics/water")  # Load water animation frames
+        for x, y, surf in tmx_data.get_layer_by_name("Water").tiles():
+            Water((x * TILE_SIZE, y * TILE_SIZE), water_frames, self.all_sprites)
 
-		self.player.item_inventory[item] += 1
-		self.success.play()
+        # TREE OBJECTS - Create interactive trees
+        for obj in tmx_data.get_layer_by_name("Trees"):
+            Tree(
+                pos=(obj.x, obj.y),
+                surf=obj.image,
+                groups=[self.all_sprites, self.collision_sprites, self.tree_sprites],
+                name=obj.name,
+                player_add=self.player_add,  # Callback for when player gets items
+            )
 
-	def toggle_shop(self):
+        # DECORATIVE WILDFLOWERS
+        for obj in tmx_data.get_layer_by_name("Decoration"):
+            WildFlower(
+                (obj.x, obj.y), obj.image, [self.all_sprites, self.collision_sprites]
+            )
 
-		self.shop_active = not self.shop_active
+        # INVISIBLE COLLISION TILES - Create invisible barriers
+        for x, y, surf in tmx_data.get_layer_by_name("Collision").tiles():
+            Generic(
+                (x * TILE_SIZE, y * TILE_SIZE),
+                pygame.Surface((TILE_SIZE, TILE_SIZE)),  # Invisible surface
+                self.collision_sprites,
+            )
 
-	def reset(self):
-		# plants
-		self.soil_layer.update_plants()
+        # PLAYER AND INTERACTION OBJECTS
+        # Find special objects like player start position and interactive areas
+        for obj in tmx_data.get_layer_by_name("Player"):
+            if obj.name == "Start":
+                # Create the player at the starting position
+                self.player = Player(
+                    pos=(obj.x, obj.y),
+                    group=self.all_sprites,
+                    collision_sprites=self.collision_sprites,
+                    tree_sprites=self.tree_sprites,
+                    interaction=self.interaction_sprites,
+                    soil_layer=self.soil_layer,
+                    toggle_shop=self.toggle_shop,
+                )
 
-		# soil
-		self.soil_layer.remove_water()
-		self.raining = randint(0,10) > 7
-		self.soil_layer.raining = self.raining
-		if self.raining:
-			self.soil_layer.water_all()
+            if obj.name == "Bed":
+                # Create bed interaction area for sleeping
+                Interaction(
+                    (obj.x, obj.y),
+                    (obj.width, obj.height),
+                    self.interaction_sprites,
+                    obj.name,
+                )
 
-		# apples on the trees
-		for tree in self.tree_sprites.sprites():
-			for apple in tree.apple_sprites.sprites():
-				apple.kill()
-			tree.create_fruit()
+            if obj.name == "Trader":
+                # Create trader interaction area for shopping
+                Interaction(
+                    (obj.x, obj.y),
+                    (obj.width, obj.height),
+                    self.interaction_sprites,
+                    obj.name,
+                )
 
-		# sky
-		self.sky.start_color = [255,255,255]
+        # BACKGROUND GROUND TILE
+        # Create the base ground that covers the entire map
+        Generic(
+            pos=(0, 0),
+            surf=pygame.image.load("graphics/world/ground.png").convert_alpha(),
+            groups=self.all_sprites,
+            z=LAYERS["ground"],  # Put it at the bottom layer
+        )
 
-	def plant_collision(self):
-		if self.soil_layer.plant_sprites:
-			for plant in self.soil_layer.plant_sprites.sprites():
-				if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
-					self.player_add(plant.plant_type)
-					plant.kill()
-					Particle(plant.rect.topleft, plant.image, self.all_sprites, z = LAYERS['main'])
-					self.soil_layer.grid[plant.rect.centery // TILE_SIZE][plant.rect.centerx // TILE_SIZE].remove('P')
+    def update_audio_volumes(self):
+        """
+        Update Audio Volume Levels
+        ==========================
+        Applies the current volume settings to all audio in this level.
 
-	def run(self,dt):
-		
-		# drawing logic
-		self.display_surface.fill('black')
-		self.all_sprites.custom_draw(self.player)
-		
-		# updates
-		if self.shop_active:
-			self.menu.update()
-		else:
-			self.all_sprites.update(dt)
-			self.plant_collision()
-			self.soil_layer.update_plants(dt)
+        EDUCATIONAL CONCEPTS:
+        - Audio system management
+        - Settings application
+        - Volume control calculations
+        - System integration
+        """
+        # Get current volume settings from the game settings
+        master_vol = game_settings.get("master_volume")
+        music_vol = game_settings.get("music_volume")
+        sfx_vol = game_settings.get("sfx_volume")
 
-		# weather
-		self.overlay.display()
-		if self.raining and not self.shop_active:
-			self.rain.update()
-		self.sky.display(dt)
+        # Apply volumes - music uses master * music volume
+        self.music.set_volume(master_vol * music_vol)
+        # SFX uses master * sfx volume
+        self.success.set_volume(master_vol * sfx_vol)
 
-		# transition overlay
-		if self.player.sleep:
-			self.transition.play()
+    def player_add(self, item):
+        """
+        Add Item to Player Inventory
+        ============================
+        Called when the player collects an item (like chopping a tree).
+        Adds the item to inventory and plays a success sound.
+
+        EDUCATIONAL CONCEPTS:
+        - Callback functions
+        - Inventory management
+        - Audio feedback for player actions
+        - System integration
+        """
+        # Add the item to the player's inventory
+        self.player.item_inventory[item] += 1
+
+        # Update volume before playing sound
+        self.update_audio_volumes()
+        self.success.play()
+
+    def toggle_shop(self):
+        """
+        Toggle Shop Menu On/Off
+        =======================
+        Switches between normal gameplay and shop interface.
+
+        EDUCATIONAL CONCEPTS:
+        - Boolean state toggling
+        - Game state management
+        - UI system integration
+        """
+        self.shop_active = not self.shop_active
+
+    def reset(self):
+        """
+        Reset Game World for New Day
+        ============================
+        Called when the player sleeps. Resets various game systems
+        for a new day including plants, weather, and trees.
+
+        EDUCATIONAL CONCEPTS:
+        - Game state reset procedures
+        - System coordination
+        - Random events (weather)
+        - Object lifecycle management
+        """
+        # Reset plant growth in the soil system
+        self.soil_layer.update_plants()
+
+        # Reset soil watering and determine new weather
+        self.soil_layer.remove_water()
+        self.raining = randint(0, 10) > 7  # New random weather
+        self.soil_layer.raining = self.raining
+        if self.raining:
+            self.soil_layer.water_all()  # Rain waters all soil
+
+        # Reset apples on trees
+        for tree in self.tree_sprites.sprites():
+            # Remove old apples
+            for apple in tree.apple_sprites.sprites():
+                apple.kill()
+            # Create new apples
+            tree.create_fruit()
+
+        # Reset sky color to daylight
+        self.sky.start_color = [255, 255, 255]
+
+    def plant_collision(self):
+        """
+        Check for Plant Harvesting
+        ==========================
+        Checks if the player is touching any harvestable plants
+        and automatically harvests them.
+
+        EDUCATIONAL CONCEPTS:
+        - Collision detection between different object types
+        - Automatic event triggering
+        - Object destruction and effects
+        - Grid-based data management
+        """
+        # Check if there are any plants to harvest
+        if self.soil_layer.plant_sprites:
+            for plant in self.soil_layer.plant_sprites.sprites():
+                # Check if plant is ready and player is touching it
+                if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
+                    # Add the plant to player's inventory
+                    self.player_add(plant.plant_type)
+
+                    # Create a visual particle effect
+                    Particle(
+                        plant.rect.topleft,
+                        plant.image,
+                        self.all_sprites,
+                        z=LAYERS["main"],
+                    )
+
+                    # Remove the plant from the game
+                    plant.kill()
+
+                    # Update the soil grid data
+                    self.soil_layer.grid[plant.rect.centery // TILE_SIZE][
+                        plant.rect.centerx // TILE_SIZE
+                    ].remove("P")
+
+    def run(self, dt):
+        """
+        Main Level Update Method
+        =======================
+        Called every frame to update the entire game world.
+        This is the heart of the game loop for the level!
+
+        EDUCATIONAL CONCEPTS:
+        - Main update loop structure
+        - Conditional system updates
+        - Rendering order management
+        - Frame-rate independent updates (delta time)
+        - System coordination
+
+        Parameters:
+        dt (float): Delta time - time since last frame in seconds
+        """
+        # RENDERING - Draw the world
+        # Clear the screen with black background
+        self.display_surface.fill("black")
+        # Draw all sprites with camera offset
+        self.all_sprites.custom_draw(self.player)
+
+        # GAME LOGIC UPDATES
+        # Update different systems based on current game state
+        if self.shop_active:
+            # If shop is open, only update the shop menu
+            self.menu.update()
+        else:
+            # Normal gameplay updates
+            self.all_sprites.update(dt)  # Update all game objects
+            self.plant_collision()  # Check for plant harvesting
+            self.soil_layer.update_plants(dt)  # Update plant growth
+
+        # UI AND VISUAL EFFECTS
+        # Always display the UI overlay (inventory, health, etc.)
+        self.overlay.display()
+
+        # Weather effects (only during normal gameplay)
+        if self.raining and not self.shop_active:
+            self.rain.update()
+
+        # Sky color transitions (day/night cycle)
+        self.sky.display(dt)
+
+        # TRANSITION EFFECTS
+        # Handle sleep transition overlay
+        if self.player.sleep:
+            self.transition.play()
+
 
 class CameraGroup(pygame.sprite.Group):
-	def __init__(self):
-		super().__init__()
-		self.display_surface = pygame.display.get_surface()
-		self.offset = pygame.math.Vector2()
+    """
+    Camera-Following Sprite Group
+    ============================
+    A custom sprite group that automatically centers the camera on the player
+    and renders sprites in the correct order based on their screen position.
 
-	def custom_draw(self, player):
-		self.offset.x = player.rect.centerx - SCREEN_WIDTH / 2
-		self.offset.y = player.rect.centery - SCREEN_HEIGHT / 2
+    EDUCATIONAL CONCEPTS:
+    - Inheritance (extends pygame.sprite.Group)
+    - Camera systems in games
+    - Viewport and world coordinates
+    - Sprite rendering order
+    - Mathematical coordinate transformations
+    """
 
-		for layer in LAYERS.values():
-			for sprite in sorted(self.sprites(), key = lambda sprite: sprite.rect.centery):
-				if sprite.z == layer:
-					offset_rect = sprite.rect.copy()
-					offset_rect.center -= self.offset
-					self.display_surface.blit(sprite.image, offset_rect)
+    def __init__(self):
+        """
+        Initialize the Camera System
+        ===========================
+        Sets up the camera offset and gets the display surface.
+        """
+        super().__init__()  # Initialize the parent sprite group
+        self.display_surface = pygame.display.get_surface()
+        self.offset = pygame.math.Vector2()  # Camera offset from world origin
 
-					# # anaytics
-					# if sprite == player:
-					# 	pygame.draw.rect(self.display_surface,'red',offset_rect,5)
-					# 	hitbox_rect = player.hitbox.copy()
-					# 	hitbox_rect.center = offset_rect.center
-					# 	pygame.draw.rect(self.display_surface,'green',hitbox_rect,5)
-					# 	target_pos = offset_rect.center + PLAYER_TOOL_OFFSET[player.status.split('_')[0]]
-					# 	pygame.draw.circle(self.display_surface,'blue',target_pos,5)
+    def custom_draw(self, player):
+        """
+        Draw All Sprites with Camera Offset
+        ===================================
+        Calculates camera position based on player location and draws
+        all sprites with proper layering and offset.
+
+        EDUCATIONAL CONCEPTS:
+        - Camera following algorithms
+        - Coordinate system transformations
+        - Sprite layering and depth sorting
+        - Vector mathematics in games
+
+        Parameters:
+        player: The player object to center the camera on
+        """
+        # CAMERA POSITIONING
+        # Center the camera on the player
+        self.offset.x = player.rect.centerx - SCREEN_WIDTH / 2
+        self.offset.y = player.rect.centery - SCREEN_HEIGHT / 2
+
+        # LAYERED RENDERING
+        # Draw sprites in layer order for proper visual layering
+        for layer in LAYERS.values():
+            # Sort sprites by their Y position for proper depth
+            for sprite in sorted(
+                self.sprites(), key=lambda sprite: sprite.rect.centery
+            ):
+                # Only draw sprites that belong to this layer
+                if sprite.z == layer:
+                    # Calculate sprite position relative to camera
+                    offset_rect = sprite.rect.copy()
+                    offset_rect.center -= self.offset
+
+                    # Draw the sprite at the offset position
+                    self.display_surface.blit(sprite.image, offset_rect)
+
+                    # DEBUG VISUALIZATION (commented out)
+                    # Uncomment these lines to see collision boxes and tool ranges
+                    # if sprite == player:
+                    #     pygame.draw.rect(self.display_surface,'red',offset_rect,5)
+                    #     hitbox_rect = player.hitbox.copy()
+                    #     hitbox_rect.center = offset_rect.center
+                    #     pygame.draw.rect(self.display_surface,'green',hitbox_rect,5)
+                    #     target_pos = offset_rect.center + PLAYER_TOOL_OFFSET[player.status.split('_')[0]]
+                    #     pygame.draw.circle(self.display_surface,'blue',target_pos,5)
