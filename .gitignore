@@ -38,3 +38,5 @@ __pycache__/timer.cpython-311.pyc
 __pycache__/transition.cpython-311.pyc
 
 ai_materials/data/
+ai_materials/checkpoints/
+ai_materials/lightning_logs/
