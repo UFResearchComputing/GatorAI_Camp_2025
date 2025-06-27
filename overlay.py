@@ -185,42 +185,63 @@ class Overlay:
         self.display_surface.blit(seed_surf, seed_rect)
 
         # INVENTORY AND KEYBOARD HINTS
-        # Position hints relative to the tool and seed icons for clarity
         tool_pos = pygame.math.Vector2(tool_rect.topleft)
         seed_pos = pygame.math.Vector2(seed_rect.topleft)
 
-        # Tool switching hints (Q key and rotate icon)
         self.display_surface.blit(
             self.q_key_surf, tool_pos + pygame.math.Vector2(-10, -60)
         )
         self.display_surface.blit(
             self.rotate_surf, tool_pos + pygame.math.Vector2(30, -55)
         )
-
-        # Seed switching hints (E key and rotate icon)
         self.display_surface.blit(
             self.e_key_surf, seed_pos + pygame.math.Vector2(70, 0)
         )
         self.display_surface.blit(
             self.rotate_surf, seed_pos + pygame.math.Vector2(110, 5)
         )
-
-        # Action key hints (Spacebar and Ctrl)
         self.display_surface.blit(self.spacebar_surf, (tool_pos.x, tool_pos.y - 35))
         self.display_surface.blit(
             self.ctrl_key_surf, (seed_pos.x + 70, seed_pos.y + 25)
         )
 
-        # Inventory icon and hint (I key)
         self.display_surface.blit(self.inventory_surf, (SCREEN_WIDTH - 80, 10))
         self.display_surface.blit(self.i_key_surf, (SCREEN_WIDTH - 48, 80))
 
         # EMOTION DISPLAY
         if self.emotions_deque:
-            for i, emotion in enumerate(list(self.emotions_deque)):
+            emotions_to_display = list(reversed(self.emotions_deque))
+            main_emotion_size = 64
+            old_emotion_size = 48
+            padding = 6
+            current_x = SCREEN_WIDTH - padding
+
+            for i, emotion in enumerate(emotions_to_display):
                 icon = self.emotion_icons.get(emotion)
-                if icon:
-                    # Position icons from right to left, scaled and spaced out
-                    x_pos = SCREEN_WIDTH - (i + 1) * 70  # 64px icon + 6px padding
-                    y_pos = SCREEN_HEIGHT - 70  # 64px icon + 6px padding
-                    self.display_surface.blit(icon, (x_pos, y_pos))
+                if not icon:
+                    continue
+
+                if i == 0:  # Most recent emotion
+                    size = main_emotion_size
+                    scaled_icon = icon
+                    current_x -= size
+                    x_pos = current_x
+                    y_pos = SCREEN_HEIGHT - size - padding
+                    box_rect = pygame.Rect(x_pos - 4, y_pos - 4, size + 8, size + 8)
+                    pygame.draw.rect(
+                        self.display_surface,
+                        (255, 20, 147),
+                        box_rect,
+                        3,
+                        border_radius=8,
+                    )
+                    self.display_surface.blit(scaled_icon, (x_pos, y_pos))
+                    current_x -= padding
+                else:  # Older emotions
+                    size = old_emotion_size
+                    scaled_icon = pygame.transform.scale(icon, (size, size))
+                    current_x -= size
+                    x_pos = current_x
+                    y_pos = SCREEN_HEIGHT - size - padding
+                    self.display_surface.blit(scaled_icon, (x_pos, y_pos))
+                    current_x -= padding
