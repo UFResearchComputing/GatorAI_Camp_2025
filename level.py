@@ -57,7 +57,7 @@ class Level:
     This demonstrates how large game projects organize and manage complexity!
     """
 
-    def __init__(self):
+    def __init__(self, emotions_deque):
         """
         Initialize the Game World
         ========================
@@ -91,7 +91,7 @@ class Level:
         self.setup()
 
         # Create the UI overlay (shows player inventory, tools, etc.)
-        self.overlay = Overlay(self.player)
+        self.overlay = Overlay(self.player, emotions_deque)
 
         # Create the day/night transition system
         self.transition = Transition(self.reset, self.player)

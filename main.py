@@ -18,6 +18,7 @@ from installer import install
 install("pygame")  # Game development library
 install("pytmx")  # Map loading library
 install("kagglehub")  # Dataset library
+install("requests")  # Library for web requests
 
 import pygame  # Main game development library
 import sys  # System operations
@@ -29,6 +30,8 @@ from level import Level  # Game world and gameplay
 from main_menu import MainMenu  # Main menu system
 from character_screen import CharacterScreen  # Player information screen
 import game_settings  # Audio and game settings
+from emotion_detector import EmotionDetector
+from collections import deque
 
 
 class Game:
@@ -74,13 +77,18 @@ class Game:
         self.character_screen = None  # Player stats screen (created when game starts)
         self.show_main_menu = True  # Flag to control which screen to show
 
+        # Emotion Detection Setup
+        self.emotions_deque = deque(maxlen=5)  # Store the last 5 detected emotions
+        self.emotion_detector = EmotionDetector(self.emotions_deque)
+        # self.emotion_detector.start() # We will start this in the run loop
+
     def start_game(self):
         """
         Start the Main Game - Called When Player Clicks "Start Game"
         ==========================================================
         This method creates the game world and player character screen.
         """
-        self.level = Level()  # Create the game world
+        self.level = Level(self.emotions_deque)  # Create the game world
         self.character_screen = CharacterScreen(
             self.level.player
         )  # Create player info screen
@@ -97,12 +105,20 @@ class Game:
         3. Draws everything to the screen
 
         This is a fundamental concept in game programming!"""
+        # Start the emotion detector thread once the main loop begins
+        if not self.emotion_detector.is_alive():
+            self.emotion_detector.start()
+
         # Main game loop - runs until player quits
         while True:
+            # A small delay to ensure the main thread has priority
+            pygame.time.delay(10)
+
             # EVENT HANDLING - Check what the player is doing
             for event in pygame.event.get():
                 # Check if player clicked the X button to close the window
                 if event.type == pygame.QUIT:
+                    self.emotion_detector.stop()  # Signal the thread to stop
                     pygame.quit()  # Close pygame
                     sys.exit()  # Exit the program
 
