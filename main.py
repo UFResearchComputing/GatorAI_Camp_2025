@@ -19,6 +19,8 @@ install("pygame")  # Game development library
 install("pytmx")  # Map loading library
 install("kagglehub")  # Dataset library
 install("requests")  # Library for web requests
+install("opencv-python")  # Computer vision library
+install("pytorch_lightning")
 
 import pygame  # Main game development library
 import sys  # System operations
