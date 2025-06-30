@@ -10,6 +10,7 @@ import os
 import requests
 import threading
 import time
+import game_settings
 
 
 # =============================================================================
@@ -66,17 +67,28 @@ class EmotionDetector(threading.Thread):
     Runs real-time emotion detection in a separate thread to avoid blocking the game loop.
     """
 
-    def __init__(self, emotions_deque):
+    def __init__(self, emotions_deque, show_camera_preview=False):
         super().__init__()
         self.daemon = True  # Thread will close when the main program exits
         self._stopper = threading.Event()
         self.emotions_deque = emotions_deque
+        self.show_camera_preview = show_camera_preview
         self.model = None
         self.emotion_names = []
         self.face_cascade = None
 
     def stop(self):
         self._stopper.set()
+
+    def restart_with_new_camera(self):
+        """Restart the detector with a new camera selection"""
+        if self.is_alive():
+            print("🔄 Restarting emotion detector with new camera...")
+            self.stop()
+            self.join(timeout=2.0)  # Wait for thread to stop
+            # Create a new detector instance and start it
+            return True
+        return False
 
     def _load_model(self):
         """Loads the trained emotion recognition model."""
@@ -130,9 +142,58 @@ class EmotionDetector(threading.Thread):
             print("⚠️ Emotion detection thread stopping due to loading errors.")
             return
 
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            print("❌ Error: Could not open webcam.")
+        # Try multiple camera initialization methods for Windows compatibility
+        cap = None
+        selected_camera_index = game_settings.get_camera_index()
+        camera_backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, 0]  # Windows-specific backends
+
+        print(
+            f"🎥 Using camera index: {selected_camera_index} ({game_settings.get_camera_name(selected_camera_index)})"
+        )
+
+        for backend in camera_backends:
+            try:
+                if backend == 0:
+                    cap = cv2.VideoCapture(selected_camera_index)
+                    print("🔍 Trying default camera backend...")
+                else:
+                    cap = cv2.VideoCapture(selected_camera_index, backend)
+                    backend_name = (
+                        "DirectShow" if backend == cv2.CAP_DSHOW else "Media Foundation"
+                    )
+                    print(f"🔍 Trying {backend_name} backend...")
+
+                if cap.isOpened():
+                    # Test if camera actually works by reading a frame
+                    ret, test_frame = cap.read()
+                    if ret and test_frame is not None:
+                        print(
+                            f"✅ Camera {selected_camera_index} initialized successfully!"
+                        )
+                        # Set camera properties for better performance
+                        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                        cap.set(cv2.CAP_PROP_FPS, 30)
+                        break
+                    else:
+                        cap.release()
+                        cap = None
+                else:
+                    if cap:
+                        cap.release()
+                    cap = None
+            except Exception as e:
+                print(f"⚠️ Camera backend failed: {e}")
+                if cap:
+                    cap.release()
+                cap = None
+
+        if cap is None or not cap.isOpened():
+            print("❌ Error: Could not open webcam with any available backend.")
+            print("💡 Troubleshooting tips:")
+            print("   - Make sure no other applications are using the camera")
+            print("   - Check Windows privacy settings for camera access")
+            print("   - Try running as administrator if needed")
             return
 
         transform = transforms.Compose(
@@ -140,37 +201,65 @@ class EmotionDetector(threading.Thread):
         )
 
         print("🚀 Starting emotion detection thread...")
-        while not self._stopper.is_set():
-            ret, frame = cap.read()
-            if not ret:
-                time.sleep(0.1)
-                continue
+        frame_count = 0
+        last_emotion_time = time.time()
 
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = self.face_cascade.detectMultiScale(gray_frame, 1.1, 5)
-
-            if len(faces) > 0:
-                # For simplicity, we only process the largest face found
-                faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
-                x, y, w, h = faces[0]
-
-                face_roi = gray_frame[y : y + h, x : x + w]
-
-                if face_roi.size == 0:
+        try:
+            while not self._stopper.is_set():
+                ret, frame = cap.read()
+                if not ret:
+                    print("⚠️ Failed to read frame from camera")
+                    time.sleep(0.1)
                     continue
 
-                resized_face = cv2.resize(face_roi, (48, 48))
-                image = Image.fromarray(resized_face)
-                image_tensor = transform(image).unsqueeze(0)
+                frame_count += 1
+                current_time = time.time()
 
-                with torch.no_grad():
-                    output = self.model(image_tensor)
-                    pred_idx = torch.argmax(output, dim=1).item()
-                    emotion = self.emotion_names[pred_idx]
-                    self.emotions_deque.append(emotion)
+                # Keep camera active by continuously reading frames
+                gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = self.face_cascade.detectMultiScale(gray_frame, 1.1, 5)
 
-            # A short sleep to prevent the thread from consuming 100% CPU
-            time.sleep(0.1)
+                # Process emotion detection every 0.5 seconds (not every frame)
+                if current_time - last_emotion_time >= 0.5:
+                    if len(faces) > 0:
+                        # For simplicity, we only process the largest face found
+                        faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
+                        x, y, w, h = faces[0]
 
-        cap.release()
-        print("✅ Emotion detection thread stopped.")
+                        face_roi = gray_frame[y : y + h, x : x + w]
+
+                        if face_roi.size > 0:
+                            resized_face = cv2.resize(face_roi, (48, 48))
+                            image = Image.fromarray(resized_face)
+                            image_tensor = transform(image).unsqueeze(0)
+
+                            with torch.no_grad():
+                                output = self.model(image_tensor)
+                                pred_idx = torch.argmax(output, dim=1).item()
+                                emotion = self.emotion_names[pred_idx]
+                                self.emotions_deque.append(emotion)
+
+                    last_emotion_time = current_time
+
+                # Optional: Show camera preview for debugging
+                if self.show_camera_preview:
+                    # Draw rectangles around detected faces
+                    for x, y, w, h in faces:
+                        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+                    cv2.imshow("Camera Preview - Press Q to close", frame)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        self.show_camera_preview = False
+                        cv2.destroyAllWindows()
+
+                # Keep a steady frame rate - this is crucial for keeping camera active
+                time.sleep(0.033)  # ~30 FPS
+
+        except Exception as e:
+            print(f"❌ Error in emotion detection loop: {e}")
+        finally:
+            if cap:
+                cap.release()
+            if self.show_camera_preview:
+                cv2.destroyAllWindows()
+            print("✅ Emotion detection thread stopped.")

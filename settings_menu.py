@@ -5,21 +5,26 @@ import game_settings
 
 
 class SettingsMenu:
-    def __init__(self):
+    def __init__(self, camera_change_callback=None):
         self.display_surface = pygame.display.get_surface()
         self.font = pygame.font.Font("font/LycheeSoda.ttf", 40)
         self.title_font = pygame.font.Font("font/LycheeSoda.ttf", 80)
+        self.camera_change_callback = camera_change_callback
 
         # Settings options
         self.setting_options = [
             {"name": "Master Volume", "type": "volume", "key": "master_volume"},
             {"name": "Music Volume", "type": "volume", "key": "music_volume"},
             {"name": "Sound Effects", "type": "volume", "key": "sfx_volume"},
+            {"name": "Camera", "type": "camera", "key": "camera_index"},
             {"name": "Back to Menu", "type": "action", "key": "back"},
         ]
 
         self.selected_index = 0
         self.input_timer = Timer(150)
+
+        # Camera detection
+        self.available_cameras = game_settings.detect_available_cameras()
 
         # Load corn graphic for selection indicator
         import os
@@ -51,6 +56,8 @@ class SettingsMenu:
             # Option value/control
             if option["type"] == "volume":
                 self.draw_volume_control(option, y_pos, i == self.selected_index)
+            elif option["type"] == "camera":
+                self.draw_camera_control(option, y_pos, i == self.selected_index)
             elif option["type"] == "action":
                 # For "Back to Menu", just show the text
                 pass
@@ -65,7 +72,7 @@ class SettingsMenu:
         # Instructions
         instructions = [
             "Use UP/DOWN arrows to navigate",
-            "Use LEFT/RIGHT arrows to adjust volume",
+            "Use LEFT/RIGHT arrows to adjust volume or change camera",
             "Press ENTER to select, ESC to go back",
         ]
 
@@ -107,6 +114,42 @@ class SettingsMenu:
         percent_rect = percent_surf.get_rect(center=(bar_x + bar_width + 60, y_pos))
         self.display_surface.blit(percent_surf, percent_rect)
 
+    def draw_camera_control(self, option, y_pos, is_selected):
+        """Draw camera selection control"""
+        current_camera_index = game_settings.get_camera_index()
+        current_camera = next(
+            (
+                cam
+                for cam in self.available_cameras
+                if cam["index"] == current_camera_index
+            ),
+            {"name": f"Camera {current_camera_index}"},
+        )
+
+        # Camera name display
+        color = "White" if is_selected else "Gray"
+        camera_text = current_camera["name"]
+        camera_surf = self.font.render(camera_text, True, color)
+        camera_rect = camera_surf.get_rect(center=(SCREEN_WIDTH / 2 + 150, y_pos))
+        self.display_surface.blit(camera_surf, camera_rect)
+
+        # Show arrows if more than one camera available
+        if len(self.available_cameras) > 1 and is_selected:
+            arrow_color = "Yellow" if is_selected else "Gray"
+            # Left arrow
+            left_arrow = self.font.render("<", True, arrow_color)
+            left_rect = left_arrow.get_rect(
+                midright=(camera_rect.left - 10, camera_rect.centery)
+            )
+            self.display_surface.blit(left_arrow, left_rect)
+
+            # Right arrow
+            right_arrow = self.font.render(">", True, arrow_color)
+            right_rect = right_arrow.get_rect(
+                midleft=(camera_rect.right + 10, camera_rect.centery)
+            )
+            self.display_surface.blit(right_arrow, right_rect)
+
     def input(self):
         keys = pygame.key.get_pressed()
         self.input_timer.update()
@@ -136,6 +179,30 @@ class SettingsMenu:
                     new_volume = min(100, current_volume + 5)
 
                 game_settings.set_volume_percentage(current_option["key"], new_volume)
+                self.input_timer.activate()
+
+            elif current_option["type"] == "camera":
+                current_index = game_settings.get_camera_index()
+                camera_indices = [cam["index"] for cam in self.available_cameras]
+
+                if current_index in camera_indices:
+                    current_pos = camera_indices.index(current_index)
+                else:
+                    current_pos = 0
+
+                if keys[pygame.K_LEFT]:
+                    new_pos = (current_pos - 1) % len(camera_indices)
+                else:  # RIGHT
+                    new_pos = (current_pos + 1) % len(camera_indices)
+
+                new_camera_index = camera_indices[new_pos]
+                old_camera_index = game_settings.get_camera_index()
+                game_settings.set_camera_index(new_camera_index)
+
+                # Notify about camera change
+                if old_camera_index != new_camera_index and self.camera_change_callback:
+                    self.camera_change_callback()
+
                 self.input_timer.activate()
 
         # Selection

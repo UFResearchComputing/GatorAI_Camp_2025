@@ -75,13 +75,18 @@ class Game:
 
         # Initialize game components
         self.level = None  # The game world (will be created when game starts)
-        self.main_menu = MainMenu(self.start_game)  # Main menu screen
+        self.main_menu = MainMenu(
+            self.start_game, self.restart_emotion_detector
+        )  # Main menu screen
         self.character_screen = None  # Player stats screen (created when game starts)
         self.show_main_menu = True  # Flag to control which screen to show
 
         # Emotion Detection Setup
         self.emotions_deque = deque(maxlen=5)  # Store the last 5 detected emotions
-        self.emotion_detector = EmotionDetector(self.emotions_deque)
+        # Disable camera preview for cleaner experience
+        self.emotion_detector = EmotionDetector(
+            self.emotions_deque, show_camera_preview=False
+        )
         # self.emotion_detector.start() # We will start this in the run loop
 
     def start_game(self):
@@ -95,6 +100,19 @@ class Game:
             self.level.player
         )  # Create player info screen
         self.show_main_menu = False  # Hide main menu and show game
+
+    def restart_emotion_detector(self):
+        """Restart the emotion detector with new camera settings"""
+        if self.emotion_detector and self.emotion_detector.is_alive():
+            print("🔄 Restarting emotion detector with new camera settings...")
+            self.emotion_detector.stop()
+            self.emotion_detector.join(timeout=2.0)  # Wait for thread to stop
+
+        # Create new emotion detector with updated settings
+        self.emotion_detector = EmotionDetector(
+            self.emotions_deque, show_camera_preview=False
+        )
+        self.emotion_detector.start()
 
     def run(self):
         """
