@@ -7,8 +7,9 @@ import game_settings
 class SettingsMenu:
     def __init__(self, camera_change_callback=None):
         self.display_surface = pygame.display.get_surface()
-        self.font = pygame.font.Font("font/LycheeSoda.ttf", 40)
-        self.title_font = pygame.font.Font("font/LycheeSoda.ttf", 80)
+        self.font = pygame.font.Font("font/LycheeSoda.ttf", 32)
+        self.title_font = pygame.font.Font("font/LycheeSoda.ttf", 60)
+        self.instruction_font = pygame.font.Font("font/LycheeSoda.ttf", 20)
         self.camera_change_callback = camera_change_callback
 
         # Settings options
@@ -17,6 +18,7 @@ class SettingsMenu:
             {"name": "Music Volume", "type": "volume", "key": "music_volume"},
             {"name": "Sound Effects", "type": "volume", "key": "sfx_volume"},
             {"name": "Camera", "type": "camera", "key": "camera_index"},
+            {"name": "Enable Camera", "type": "toggle", "key": "enable_camera"},
             {"name": "Back to Menu", "type": "action", "key": "back"},
         ]
 
@@ -39,13 +41,13 @@ class SettingsMenu:
 
         # Title
         title_surf = self.title_font.render("Settings", True, "White")
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, 120))
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, 90))
         self.display_surface.blit(title_surf, title_rect)
 
         # Settings options
-        start_y = 250
+        start_y = 180
         for i, option in enumerate(self.setting_options):
-            y_pos = start_y + i * 80
+            y_pos = start_y + i * 60
 
             # Option name
             color = "White" if i == self.selected_index else "Gray"
@@ -58,6 +60,8 @@ class SettingsMenu:
                 self.draw_volume_control(option, y_pos, i == self.selected_index)
             elif option["type"] == "camera":
                 self.draw_camera_control(option, y_pos, i == self.selected_index)
+            elif option["type"] == "toggle":
+                self.draw_toggle_control(option, y_pos, i == self.selected_index)
             elif option["type"] == "action":
                 # For "Back to Menu", just show the text
                 pass
@@ -76,12 +80,11 @@ class SettingsMenu:
             "Press ENTER to select, ESC to go back",
         ]
 
-        instr_y = SCREEN_HEIGHT - 120
-        small_font = pygame.font.Font("font/LycheeSoda.ttf", 24)
+        instr_y = SCREEN_HEIGHT - 80
         for i, instruction in enumerate(instructions):
-            instr_surf = small_font.render(instruction, True, "Yellow")
+            instr_surf = self.instruction_font.render(instruction, True, "Yellow")
             instr_rect = instr_surf.get_rect(
-                center=(SCREEN_WIDTH / 2, instr_y + i * 30)
+                center=(SCREEN_WIDTH / 2, instr_y + i * 24)
             )
             self.display_surface.blit(instr_surf, instr_rect)
 
@@ -150,6 +153,16 @@ class SettingsMenu:
             )
             self.display_surface.blit(right_arrow, right_rect)
 
+    def draw_toggle_control(self, option, y_pos, is_selected):
+        """Draw toggle (on/off) control for boolean settings"""
+        enabled = game_settings.get(option["key"], True)
+        color = "White" if is_selected else "Gray"
+        toggle_text = "ON" if enabled else "OFF"
+        toggle_color = "Green" if enabled else "Red"
+        toggle_surf = self.font.render(toggle_text, True, toggle_color)
+        toggle_rect = toggle_surf.get_rect(center=(SCREEN_WIDTH / 2 + 150, y_pos))
+        self.display_surface.blit(toggle_surf, toggle_rect)
+
     def input(self):
         keys = pygame.key.get_pressed()
         self.input_timer.update()
@@ -165,44 +178,40 @@ class SettingsMenu:
             self.selected_index = (self.selected_index + 1) % len(self.setting_options)
             self.input_timer.activate()
 
-        # Volume adjustment
+        # Volume adjustment and toggle
         elif keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
             current_option = self.setting_options[self.selected_index]
             if current_option["type"] == "volume":
                 current_volume = game_settings.get_volume_percentage(
                     current_option["key"]
                 )
-
                 if keys[pygame.K_LEFT]:
                     new_volume = max(0, current_volume - 5)
                 else:  # RIGHT
                     new_volume = min(100, current_volume + 5)
-
                 game_settings.set_volume_percentage(current_option["key"], new_volume)
                 self.input_timer.activate()
-
             elif current_option["type"] == "camera":
                 current_index = game_settings.get_camera_index()
                 camera_indices = [cam["index"] for cam in self.available_cameras]
-
                 if current_index in camera_indices:
                     current_pos = camera_indices.index(current_index)
                 else:
                     current_pos = 0
-
                 if keys[pygame.K_LEFT]:
                     new_pos = (current_pos - 1) % len(camera_indices)
                 else:  # RIGHT
                     new_pos = (current_pos + 1) % len(camera_indices)
-
                 new_camera_index = camera_indices[new_pos]
                 old_camera_index = game_settings.get_camera_index()
                 game_settings.set_camera_index(new_camera_index)
-
-                # Notify about camera change
                 if old_camera_index != new_camera_index and self.camera_change_callback:
                     self.camera_change_callback()
-
+                self.input_timer.activate()
+            elif current_option["type"] == "toggle":
+                # Toggle the boolean value
+                current_value = game_settings.get(current_option["key"], True)
+                game_settings.set(current_option["key"], not current_value)
                 self.input_timer.activate()
 
         # Selection

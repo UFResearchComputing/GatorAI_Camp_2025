@@ -3,5 +3,6 @@
   "music_volume": 0.0,
   "sfx_volume": 0.8,
   "fullscreen": false,
-  "camera_index": 1
+  "camera_index": 1,
+  "enable_camera": false
 }

@@ -11,6 +11,7 @@ DEFAULT_SETTINGS = {
     "music_volume": 0.7,
     "sfx_volume": 0.8,
     "camera_index": 0,  # Default to first camera
+    "enable_camera": True,  # Camera enabled by default
 }
 
 # Global references for audio management
@@ -46,6 +47,13 @@ def get(key, default=None):
     """Get a setting value"""
     settings = load_settings()
     return settings.get(key, default)
+
+
+def set(key, value):
+    """Set a setting value and save to file"""
+    settings = load_settings()
+    settings[key] = value
+    save_settings(settings)
 
 
 def set_volume_percentage(volume_type, percentage):

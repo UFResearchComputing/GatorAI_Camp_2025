@@ -83,10 +83,11 @@ class Game:
 
         # Emotion Detection Setup
         self.emotions_deque = deque(maxlen=5)  # Store the last 5 detected emotions
-        # Disable camera preview for cleaner experience
-        self.emotion_detector = EmotionDetector(
-            self.emotions_deque, show_camera_preview=False
-        )
+        self.emotion_detector = None
+        if game_settings.get("enable_camera", True):
+            self.emotion_detector = EmotionDetector(
+                self.emotions_deque, show_camera_preview=False
+            )
         # self.emotion_detector.start() # We will start this in the run loop
 
     def start_game(self):
@@ -126,7 +127,7 @@ class Game:
 
         This is a fundamental concept in game programming!"""
         # Start the emotion detector thread once the main loop begins
-        if not self.emotion_detector.is_alive():
+        if self.emotion_detector and not self.emotion_detector.is_alive():
             self.emotion_detector.start()
 
         # Main game loop - runs until player quits
