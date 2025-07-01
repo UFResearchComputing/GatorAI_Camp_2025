@@ -32,6 +32,7 @@ from random import randint
 from trader_menu import TraderMenu
 import game_settings
 import os
+from dialogue_system import DialogueSystem
 
 
 class Level:
@@ -104,10 +105,11 @@ class Level:
         self.rain = Rain(self.all_sprites)
         self.raining = randint(0, 10) > 7  # 30% chance of rain
         self.soil_layer.raining = self.raining  # Tell soil system about rain
-        self.sky = Sky()  # SHOP SYSTEM
-        # Create the trading menu system
-        self.menu = TraderMenu(self.player, self.toggle_shop)
+        self.sky = Sky()  # SHOP AND DIALOGUE SYSTEM
+        # Create the trading menu system and dialogue system
+        self.menu = TraderMenu(self.player, self.open_trader_menu)
         self.shop_active = False
+        self.dialogue_system = DialogueSystem()
 
         # AUDIO SYSTEM
         # Load and set up game sounds and music
@@ -281,16 +283,31 @@ class Level:
 
     def toggle_shop(self):
         """
-        Toggle Shop Menu On/Off
-        =======================
-        Switches between normal gameplay and shop interface.
+        Start Trader Dialogue
+        ====================
+        Initiates dialogue with the trader before opening the shop.
 
         EDUCATIONAL CONCEPTS:
-        - Boolean state toggling
+        - Dialogue system integration
+        - Callback functions
         - Game state management
-        - UI system integration
         """
-        self.shop_active = not self.shop_active
+        # Start dialogue with trader, passing player's money for dynamic responses
+        self.dialogue_system.start_dialogue(
+            "trader", player_money=self.player.money, callback=self.open_trader_menu
+        )
+
+    def open_trader_menu(self):
+        """
+        Open the Trading Menu
+        ====================
+        Opens the actual trading interface after dialogue completes.
+
+        EDUCATIONAL CONCEPTS:
+        - Sequential game states
+        - UI transition management
+        """
+        self.shop_active = True
 
     def reset(self):
         """
@@ -365,51 +382,56 @@ class Level:
 
     def run(self, dt):
         """
-        Main Level Update Method
-        =======================
-        Called every frame to update the entire game world.
-        This is the heart of the game loop for the level!
+        Main Game Loop Update
+        ====================
+        Called every frame to update and render the game world.
 
         EDUCATIONAL CONCEPTS:
-        - Main update loop structure
-        - Conditional system updates
-        - Rendering order management
-        - Frame-rate independent updates (delta time)
-        - System coordination
+        - Game loops and frame-based updates
+        - Conditional rendering based on game state
+        - Delta time for frame-independent movement
+        - System prioritization (UI vs gameplay)
 
         Parameters:
         dt (float): Delta time - time since last frame in seconds
         """
+        # Handle input for dialogue and shop closure
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE] and self.shop_active:
+            self.shop_active = False
+
         # RENDERING - Draw the world
-        # Clear the screen with black background
         self.display_surface.fill("black")
-        # Draw all sprites with camera offset
         self.all_sprites.custom_draw(self.player)
 
         # GAME LOGIC UPDATES
-        # Update different systems based on current game state
-        if self.shop_active:
+        if self.dialogue_system.active:
+            # If dialogue is active, only update dialogue logic (not render yet)
+            self.dialogue_system.handle_input()
+        elif self.shop_active:
             # If shop is open, only update the shop menu
             self.menu.update()
         else:
             # Normal gameplay updates
-            self.all_sprites.update(dt)  # Update all game objects
-            self.plant_collision()  # Check for plant harvesting
-            self.soil_layer.update_plants(dt)  # Update plant growth
+            self.all_sprites.update(dt)
+            self.plant_collision()
+            self.soil_layer.update_plants(dt)
 
         # UI AND VISUAL EFFECTS
-        # Always display the UI overlay (inventory, health, etc.)
         self.overlay.display()
 
+        # DIALOGUE RENDERING (after overlay but before emotions)
+        if self.dialogue_system.active:
+            self.dialogue_system.display()
+
         # Weather effects (only during normal gameplay)
-        if self.raining and not self.shop_active:
+        if self.raining and not self.shop_active and not self.dialogue_system.active:
             self.rain.update()
 
         # Sky color transitions (day/night cycle)
         self.sky.display(dt)
 
         # TRANSITION EFFECTS
-        # Handle sleep transition overlay
         if self.player.sleep:
             self.transition.play()
 
