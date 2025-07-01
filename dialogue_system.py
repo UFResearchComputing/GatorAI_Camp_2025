@@ -106,6 +106,9 @@ class DialogueSystem:
         self.current_line = 0
         self.on_complete_callback = callback
 
+        # Activate input timer to prevent immediate input processing
+        self.input_timer.activate()
+
         # Choose appropriate dialogue based on conditions
         character_data = self.character_dialogues[character_id]
 
