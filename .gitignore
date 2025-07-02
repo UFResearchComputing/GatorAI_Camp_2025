@@ -41,3 +41,4 @@ __pycache__/transition.cpython-311.pyc
 ai_materials/data/
 ai_materials/checkpoints
 ai_materials/lightning_logs
+ai_materials/navigator_api_key.json
