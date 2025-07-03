@@ -19,6 +19,11 @@ class SettingsMenu:
             {"name": "Sound Effects", "type": "volume", "key": "sfx_volume"},
             {"name": "Camera", "type": "camera", "key": "camera_index"},
             {"name": "Enable Camera", "type": "toggle", "key": "enable_camera"},
+            {
+                "name": "Enable AI Dialogue",
+                "type": "toggle",
+                "key": "enable_ai_dialogue",
+            },
             {"name": "Back to Menu", "type": "action", "key": "back"},
         ]
 

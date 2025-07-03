@@ -21,6 +21,7 @@ install("kagglehub")  # Dataset library
 install("requests")  # Library for web requests
 install("opencv-python")  # Computer vision library
 install("pytorch_lightning")
+install("openai")  # AI API library for dialogue generation
 
 import pygame  # Main game development library
 import sys  # System operations
@@ -136,10 +137,12 @@ class Game:
             pygame.time.delay(10)
 
             # EVENT HANDLING - Check what the player is doing
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            for event in events:
                 # Check if player clicked the X button to close the window
                 if event.type == pygame.QUIT:
-                    self.emotion_detector.stop()  # Signal the thread to stop
+                    if self.emotion_detector:
+                        self.emotion_detector.stop()  # Signal the thread to stop
                     pygame.quit()  # Close pygame
                     sys.exit()  # Exit the program
 
@@ -159,8 +162,8 @@ class Game:
                 # We're showing the main menu
                 self.main_menu.update()
             else:
-                # We're in the main game
-                self.level.run(delta_time)  # Update game world
+                # We're in the main game - pass events for proper input handling
+                self.level.run(delta_time, events)  # Update game world
 
                 # If character screen is visible, update it too
                 if self.character_screen and self.character_screen.visible:

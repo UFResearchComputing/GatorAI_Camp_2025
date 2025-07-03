@@ -75,6 +75,9 @@ class Level:
         # Get the main display surface (the game window)
         self.display_surface = pygame.display.get_surface()
 
+        # Store emotions for AI dialogue context
+        self.emotions_deque = emotions_deque
+
         # SPRITE GROUP ORGANIZATION
         # Different sprite groups help us organize and manage game objects efficiently
         self.all_sprites = CameraGroup()  # Custom camera-following sprite group
@@ -292,9 +295,32 @@ class Level:
         - Callback functions
         - Game state management
         """
-        # Start dialogue with trader, passing player's money for dynamic responses
+        # Get the most recent emotion for context-aware dialogue
+        recent_emotions = (
+            list(self.emotions_deque) if self.emotions_deque else ["neutral"]
+        )
+        current_emotion = recent_emotions[0] if recent_emotions else "neutral"
+
+        # Determine player context based on their money and progress
+        if self.player.money > 1000:
+            situation = "player has lots of money and is doing well farming"
+        elif self.player.money < 100:
+            situation = "player is just starting out and has limited funds"
+        else:
+            situation = "player is making steady progress with their farm"
+
+        # Create context dictionary for AI dialogue generation
+        player_context = {
+            "npc_name": "Merchant Pete",
+            "npc_role": "friendly trader",
+            "situation": situation,
+            "emotion": current_emotion,
+            "player_money": self.player.money,
+        }
+
+        # Start dialogue with trader using new system
         self.dialogue_system.start_dialogue(
-            "trader", player_money=self.player.money, callback=self.open_trader_menu
+            "trader", player_context=player_context, on_finish=self.open_trader_menu
         )
 
     def open_trader_menu(self):
@@ -380,7 +406,7 @@ class Level:
                         plant.rect.centerx // TILE_SIZE
                     ].remove("P")
 
-    def run(self, dt):
+    def run(self, dt, events=None):
         """
         Main Game Loop Update
         ====================
@@ -391,23 +417,30 @@ class Level:
         - Conditional rendering based on game state
         - Delta time for frame-independent movement
         - System prioritization (UI vs gameplay)
+        - Event handling and input prioritization
 
         Parameters:
         dt (float): Delta time - time since last frame in seconds
+        events (list): Pygame events for this frame
         """
-        # Handle input for dialogue and shop closure
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE] and self.shop_active:
-            self.shop_active = False
+        if events is None:
+            events = []
+
+        # Handle ESC key for shop closure
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE and self.shop_active:
+                    self.shop_active = False
 
         # RENDERING - Draw the world
         self.display_surface.fill("black")
         self.all_sprites.custom_draw(self.player)
 
-        # GAME LOGIC UPDATES
+        # GAME LOGIC UPDATES - Priority order is important!
         if self.dialogue_system.active:
-            # If dialogue is active, only update dialogue logic (not render yet)
-            self.dialogue_system.handle_input()
+            # If dialogue is active, only update dialogue logic and consume events
+            self.dialogue_system.update(events)
+            # Don't process other game logic while dialogue is active
         elif self.shop_active:
             # If shop is open, only update the shop menu
             self.menu.update()
@@ -420,9 +453,7 @@ class Level:
         # UI AND VISUAL EFFECTS
         self.overlay.display()
 
-        # DIALOGUE RENDERING (after overlay but before emotions)
-        if self.dialogue_system.active:
-            self.dialogue_system.display()
+        # Note: Dialogue rendering is handled in dialogue_system.update()
 
         # Weather effects (only during normal gameplay)
         if self.raining and not self.shop_active and not self.dialogue_system.active:
