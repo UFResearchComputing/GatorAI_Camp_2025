@@ -4,11 +4,11 @@ from timer import Timer
 
 
 class TraderMenu:
-    def __init__(self, player, toggle_menu):
+    def __init__(self, player, open_menu_callback):
 
         # general setup
         self.player = player
-        self.toggle_menu = toggle_menu
+        self.open_menu_callback = open_menu_callback  # Changed from toggle_menu
         self.display_surface = pygame.display.get_surface()
         self.font = pygame.font.Font("font/LycheeSoda.ttf", 30)
 
@@ -64,7 +64,10 @@ class TraderMenu:
         self.timer.update()
 
         if keys[pygame.K_ESCAPE]:
-            self.toggle_menu()
+            # Close the shop by setting shop_active to False in the level
+            # We need to access the level through the callback mechanism
+            # For now, we'll use a different approach - the level will handle this
+            pass  # The level will handle ESC key to close shop
 
         if not self.timer.active:
             if keys[pygame.K_UP]:

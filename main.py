@@ -18,6 +18,10 @@ from installer import install
 install("pygame")  # Game development library
 install("pytmx")  # Map loading library
 install("kagglehub")  # Dataset library
+install("requests")  # Library for web requests
+install("opencv-python")  # Computer vision library
+install("pytorch_lightning")
+install("openai")  # AI API library for dialogue generation
 
 import pygame  # Main game development library
 import sys  # System operations
@@ -29,6 +33,8 @@ from level import Level  # Game world and gameplay
 from main_menu import MainMenu  # Main menu system
 from character_screen import CharacterScreen  # Player information screen
 import game_settings  # Audio and game settings
+from emotion_detector import EmotionDetector
+from collections import deque
 
 
 class Game:
@@ -70,9 +76,20 @@ class Game:
 
         # Initialize game components
         self.level = None  # The game world (will be created when game starts)
-        self.main_menu = MainMenu(self.start_game)  # Main menu screen
+        self.main_menu = MainMenu(
+            self.start_game, self.restart_emotion_detector
+        )  # Main menu screen
         self.character_screen = None  # Player stats screen (created when game starts)
         self.show_main_menu = True  # Flag to control which screen to show
+
+        # Emotion Detection Setup
+        self.emotions_deque = deque(maxlen=5)  # Store the last 5 detected emotions
+        self.emotion_detector = None
+        if game_settings.get("enable_camera", True):
+            self.emotion_detector = EmotionDetector(
+                self.emotions_deque, show_camera_preview=False
+            )
+        # self.emotion_detector.start() # We will start this in the run loop
 
     def start_game(self):
         """
@@ -80,11 +97,24 @@ class Game:
         ==========================================================
         This method creates the game world and player character screen.
         """
-        self.level = Level()  # Create the game world
+        self.level = Level(self.emotions_deque)  # Create the game world
         self.character_screen = CharacterScreen(
             self.level.player
         )  # Create player info screen
         self.show_main_menu = False  # Hide main menu and show game
+
+    def restart_emotion_detector(self):
+        """Restart the emotion detector with new camera settings"""
+        if self.emotion_detector and self.emotion_detector.is_alive():
+            print("🔄 Restarting emotion detector with new camera settings...")
+            self.emotion_detector.stop()
+            self.emotion_detector.join(timeout=2.0)  # Wait for thread to stop
+
+        # Create new emotion detector with updated settings
+        self.emotion_detector = EmotionDetector(
+            self.emotions_deque, show_camera_preview=False
+        )
+        self.emotion_detector.start()
 
     def run(self):
         """
@@ -97,12 +127,22 @@ class Game:
         3. Draws everything to the screen
 
         This is a fundamental concept in game programming!"""
+        # Start the emotion detector thread once the main loop begins
+        if self.emotion_detector and not self.emotion_detector.is_alive():
+            self.emotion_detector.start()
+
         # Main game loop - runs until player quits
         while True:
+            # A small delay to ensure the main thread has priority
+            pygame.time.delay(10)
+
             # EVENT HANDLING - Check what the player is doing
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            for event in events:
                 # Check if player clicked the X button to close the window
                 if event.type == pygame.QUIT:
+                    if self.emotion_detector:
+                        self.emotion_detector.stop()  # Signal the thread to stop
                     pygame.quit()  # Close pygame
                     sys.exit()  # Exit the program
 
@@ -122,8 +162,8 @@ class Game:
                 # We're showing the main menu
                 self.main_menu.update()
             else:
-                # We're in the main game
-                self.level.run(delta_time)  # Update game world
+                # We're in the main game - pass events for proper input handling
+                self.level.run(delta_time, events)  # Update game world
 
                 # If character screen is visible, update it too
                 if self.character_screen and self.character_screen.visible:

@@ -7,11 +7,12 @@ from settings_menu import SettingsMenu
 
 
 class MainMenu:
-    def __init__(self, start_game):
+    def __init__(self, start_game, camera_change_callback=None):
         self.display_surface = pygame.display.get_surface()
         self.font = pygame.font.Font("font/LycheeSoda.ttf", 50)
         self.title_font = pygame.font.Font("font/LycheeSoda.ttf", 100)
         self.start_game = start_game
+        self.camera_change_callback = camera_change_callback
         self.options = ["Start Game", "Credits", "Options", "Quit"]
         self.selected_index = 0
         self.state = "main"  # main, credits, settings
@@ -25,7 +26,7 @@ class MainMenu:
         # Timer for input delay
         self.input_timer = Timer(200)
         # Settings menu
-        self.settings_menu = SettingsMenu()
+        self.settings_menu = SettingsMenu(camera_change_callback)
 
     def display(self):
         self.display_surface.fill("black")

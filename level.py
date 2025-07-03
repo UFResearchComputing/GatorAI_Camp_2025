@@ -32,6 +32,7 @@ from random import randint
 from trader_menu import TraderMenu
 import game_settings
 import os
+from dialogue_system import DialogueSystem
 
 
 class Level:
@@ -57,7 +58,7 @@ class Level:
     This demonstrates how large game projects organize and manage complexity!
     """
 
-    def __init__(self):
+    def __init__(self, emotions_deque):
         """
         Initialize the Game World
         ========================
@@ -73,6 +74,9 @@ class Level:
         """
         # Get the main display surface (the game window)
         self.display_surface = pygame.display.get_surface()
+
+        # Store emotions for AI dialogue context
+        self.emotions_deque = emotions_deque
 
         # SPRITE GROUP ORGANIZATION
         # Different sprite groups help us organize and manage game objects efficiently
@@ -91,7 +95,7 @@ class Level:
         self.setup()
 
         # Create the UI overlay (shows player inventory, tools, etc.)
-        self.overlay = Overlay(self.player)
+        self.overlay = Overlay(self.player, emotions_deque)
 
         # Create the day/night transition system
         self.transition = Transition(self.reset, self.player)
@@ -104,10 +108,11 @@ class Level:
         self.rain = Rain(self.all_sprites)
         self.raining = randint(0, 10) > 7  # 30% chance of rain
         self.soil_layer.raining = self.raining  # Tell soil system about rain
-        self.sky = Sky()  # SHOP SYSTEM
-        # Create the trading menu system
-        self.menu = TraderMenu(self.player, self.toggle_shop)
+        self.sky = Sky()  # SHOP AND DIALOGUE SYSTEM
+        # Create the trading menu system and dialogue system
+        self.menu = TraderMenu(self.player, self.open_trader_menu)
         self.shop_active = False
+        self.dialogue_system = DialogueSystem()
 
         # AUDIO SYSTEM
         # Load and set up game sounds and music
@@ -281,16 +286,70 @@ class Level:
 
     def toggle_shop(self):
         """
-        Toggle Shop Menu On/Off
-        =======================
-        Switches between normal gameplay and shop interface.
+        Start Trader Dialogue
+        ====================
+        Initiates dialogue with the trader before opening the shop.
 
         EDUCATIONAL CONCEPTS:
-        - Boolean state toggling
+        - Dialogue system integration
+        - Callback functions
         - Game state management
-        - UI system integration
         """
-        self.shop_active = not self.shop_active
+        # Get the most recent emotion for context-aware dialogue
+        recent_emotions = (
+            list(self.emotions_deque) if self.emotions_deque else ["neutral"]
+        )
+        current_emotion = recent_emotions[0] if recent_emotions else "neutral"
+
+        # Debug: Print emotion information
+        print(f"🎭 Emotion Debug - Emotions in deque: {recent_emotions}")
+        print(f"🎭 Current emotion being sent to AI: {current_emotion}")
+        print(f"💰 Player money: ${self.player.money}")
+
+        # For testing: Add some emotions to the deque if it's empty
+        if not self.emotions_deque or len(self.emotions_deque) == 0:
+            print("🎭 No emotions detected, adding test emotion...")
+            import random
+
+            test_emotions = ["happy", "surprised", "neutral", "excited"]
+            test_emotion = random.choice(test_emotions)
+            self.emotions_deque.append(test_emotion)
+            current_emotion = test_emotion
+            print(f"🎭 Added test emotion: {test_emotion}")
+
+        # Determine player context based on their money and progress
+        if self.player.money > 1000:
+            situation = "player has lots of money and is doing well farming"
+        elif self.player.money < 100:
+            situation = "player is just starting out and has limited funds"
+        else:
+            situation = "player is making steady progress with their farm"
+
+        # Create context dictionary for AI dialogue generation
+        player_context = {
+            "npc_name": "Merchant Pete",
+            "npc_role": "friendly trader",
+            "situation": situation,
+            "emotion": current_emotion,
+            "player_money": self.player.money,
+        }
+
+        # Start dialogue with trader using new system
+        self.dialogue_system.start_dialogue(
+            "trader", player_context=player_context, on_finish=self.open_trader_menu
+        )
+
+    def open_trader_menu(self):
+        """
+        Open the Trading Menu
+        ====================
+        Opens the actual trading interface after dialogue completes.
+
+        EDUCATIONAL CONCEPTS:
+        - Sequential game states
+        - UI transition management
+        """
+        self.shop_active = True
 
     def reset(self):
         """
@@ -363,53 +422,63 @@ class Level:
                         plant.rect.centerx // TILE_SIZE
                     ].remove("P")
 
-    def run(self, dt):
+    def run(self, dt, events=None):
         """
-        Main Level Update Method
-        =======================
-        Called every frame to update the entire game world.
-        This is the heart of the game loop for the level!
+        Main Game Loop Update
+        ====================
+        Called every frame to update and render the game world.
 
         EDUCATIONAL CONCEPTS:
-        - Main update loop structure
-        - Conditional system updates
-        - Rendering order management
-        - Frame-rate independent updates (delta time)
-        - System coordination
+        - Game loops and frame-based updates
+        - Conditional rendering based on game state
+        - Delta time for frame-independent movement
+        - System prioritization (UI vs gameplay)
+        - Event handling and input prioritization
 
         Parameters:
         dt (float): Delta time - time since last frame in seconds
+        events (list): Pygame events for this frame
         """
+        if events is None:
+            events = []
+
+        # Handle ESC key for shop closure
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE and self.shop_active:
+                    self.shop_active = False
+
         # RENDERING - Draw the world
-        # Clear the screen with black background
         self.display_surface.fill("black")
-        # Draw all sprites with camera offset
         self.all_sprites.custom_draw(self.player)
 
-        # GAME LOGIC UPDATES
-        # Update different systems based on current game state
-        if self.shop_active:
+        # GAME LOGIC UPDATES - Priority order is important!
+        if self.dialogue_system.active:
+            # If dialogue is active, only update dialogue logic and consume events
+            self.dialogue_system.update(events)
+            # Don't process other game logic while dialogue is active
+        elif self.shop_active:
             # If shop is open, only update the shop menu
             self.menu.update()
         else:
             # Normal gameplay updates
-            self.all_sprites.update(dt)  # Update all game objects
-            self.plant_collision()  # Check for plant harvesting
-            self.soil_layer.update_plants(dt)  # Update plant growth
+            self.all_sprites.update(dt)
+            self.plant_collision()
+            self.soil_layer.update_plants(dt)
 
         # UI AND VISUAL EFFECTS
-        # Always display the UI overlay (inventory, health, etc.)
         self.overlay.display()
 
+        # Note: Dialogue rendering is handled in dialogue_system.update()
+
         # Weather effects (only during normal gameplay)
-        if self.raining and not self.shop_active:
+        if self.raining and not self.shop_active and not self.dialogue_system.active:
             self.rain.update()
 
         # Sky color transitions (day/night cycle)
         self.sky.display(dt)
 
         # TRANSITION EFFECTS
-        # Handle sleep transition overlay
         if self.player.sleep:
             self.transition.play()
 

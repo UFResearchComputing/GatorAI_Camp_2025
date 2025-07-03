@@ -3,6 +3,7 @@
 
 #ignore python cache
 __pycache__/
+__pycache__
 *.pyc
 *.pyo
 *.pyd
@@ -38,3 +39,6 @@ __pycache__/timer.cpython-311.pyc
 __pycache__/transition.cpython-311.pyc
 
 ai_materials/data/
+ai_materials/checkpoints
+ai_materials/lightning_logs
+ai_materials/navigator_api_key.json

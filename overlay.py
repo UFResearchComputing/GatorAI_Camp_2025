@@ -46,7 +46,7 @@ class Overlay:
     - How to access their inventory
     """
 
-    def __init__(self, player):
+    def __init__(self, player, emotions_deque):
         """
         Initialize the UI Overlay System
         ===============================
@@ -67,6 +67,7 @@ class Overlay:
         # Get the main game display surface
         self.display_surface = pygame.display.get_surface()
         self.player = player  # Reference to player for current tool/seed info
+        self.emotions_deque = emotions_deque
 
         # GRAPHICS LOADING
         # Construct the path to overlay graphics folder
@@ -147,91 +148,100 @@ class Overlay:
         # Register this overlay globally for audio updates
         game_settings.set_current_overlay(self)
 
+        # Emotion icons
+        emotions_path = os.path.join(base_path, "graphics/emotions/")
+        self.emotion_icons = {}
+        for emotion in ["Happy", "Sad", "Angry", "Surprised", "Neutral", "Fear"]:
+            icon_path = os.path.join(emotions_path, f"bunny-{emotion.lower()}.png")
+            if os.path.exists(icon_path):
+                icon_surf = pygame.image.load(icon_path).convert_alpha()
+                # Scale emotion icons to match the inventory icon size (64x64)
+                self.emotion_icons[emotion] = pygame.transform.scale(
+                    icon_surf, (64, 64)
+                )
+
     def display(self):
         """
-        Draw the UI Overlay
-        ==================
-        This method draws all the UI elements on top of the game world.
-        Called every frame to show current tool, seed, and control hints.
+        Display the UI Overlay
+        ======================
+        Draws all the UI elements onto the screen, including tool/seed indicators,
+        keyboard hints, and emotion icons.
 
         EDUCATIONAL CONCEPTS:
-        - UI rendering and positioning
-        - Surface blitting (drawing one image onto another)
-        - Rectangle positioning and alignment
-        - Visual layout and organization
         - Real-time UI updates
-        - Coordinate calculation for positioning
-
-        This method demonstrates how to create a clean, informative UI that
-        helps players understand the game controls and their current state.
+        - Conditional rendering
+        - Surface blitting and positioning
+        - Looping through data structures
+        - Visual feedback for game state
         """
-        # CURRENT TOOL DISPLAY
-        # Show the currently selected tool icon
+        # TOOL DISPLAY
         tool_surf = self.tools_surf[self.player.selected_tool]
         tool_rect = tool_surf.get_rect(midbottom=OVERLAY_POSITIONS["tool"])
         self.display_surface.blit(tool_surf, tool_rect)
 
-        # SPACEBAR KEY DISPLAY (for using tools)
-        # Position spacebar key next to the tool (shows how to use the tool)
-        spacebar_rect = self.spacebar_surf.get_rect(
-            midleft=(tool_rect.right // 3, tool_rect.centery - 50)
-        )
-        self.display_surface.blit(self.spacebar_surf, spacebar_rect)
-
-        # CURRENT SEED DISPLAY
-        # Show the currently selected seed icon
+        # SEED DISPLAY
         seed_surf = self.seeds_surf[self.player.selected_seed]
         seed_rect = seed_surf.get_rect(midbottom=OVERLAY_POSITIONS["seed"])
         self.display_surface.blit(seed_surf, seed_rect)
 
-        # CTRL KEY DISPLAY (for planting seeds)
-        # Position ctrl key next to the seed (shows how to plant)
-        ctrl_key_rect = self.ctrl_key_surf.get_rect(
-            midleft=(
-                OVERLAY_POSITIONS["seed"][0] + 20,
-                OVERLAY_POSITIONS["seed"][1] - 20,
-            )
-        )
-        self.display_surface.blit(self.ctrl_key_surf, ctrl_key_rect)
+        # INVENTORY AND KEYBOARD HINTS
+        tool_pos = pygame.math.Vector2(tool_rect.topleft)
+        seed_pos = pygame.math.Vector2(seed_rect.topleft)
 
-        # ROTATION INDICATORS
-        # Show rotate symbols above ctrl and spacebar to indicate switching
-        rotate_rect = self.rotate_surf.get_rect(
-            midbottom=(ctrl_key_rect.centerx - 12, ctrl_key_rect.top - 5)
+        self.display_surface.blit(
+            self.q_key_surf, tool_pos + pygame.math.Vector2(-10, -60)
         )
-        self.display_surface.blit(self.rotate_surf, rotate_rect)
-
-        rotate_rect_spacebar = self.rotate_surf.get_rect(
-            midbottom=(spacebar_rect.centerx - 12, spacebar_rect.top - 5)
+        self.display_surface.blit(
+            self.rotate_surf, tool_pos + pygame.math.Vector2(30, -55)
         )
-        self.display_surface.blit(self.rotate_surf, rotate_rect_spacebar)
-
-        # Q KEY DISPLAY (for tool switching)
-        # Position Q key next to rotation symbol to show tool switching control
-        q_key_rect = self.q_key_surf.get_rect(
-            midleft=(rotate_rect_spacebar.right + 5, rotate_rect_spacebar.centery)
+        self.display_surface.blit(
+            self.e_key_surf, seed_pos + pygame.math.Vector2(70, 0)
         )
-        self.display_surface.blit(self.q_key_surf, q_key_rect)
-
-        # E KEY DISPLAY (for seed switching)
-        # Position E key next to rotation symbol to show seed switching control
-        e_key_rect = self.e_key_surf.get_rect(
-            midleft=(rotate_rect.centerx + 10, rotate_rect.centery)
+        self.display_surface.blit(
+            self.rotate_surf, seed_pos + pygame.math.Vector2(110, 5)
         )
-        self.display_surface.blit(self.e_key_surf, e_key_rect)
-
-        # INVENTORY ACCESS DISPLAY
-        # Show inventory icon and I key in bottom right corner
-        inventory_rect = self.inventory_surf.get_rect(
-            bottomright=(SCREEN_WIDTH - 20, SCREEN_HEIGHT - 20)
+        self.display_surface.blit(self.spacebar_surf, (tool_pos.x, tool_pos.y - 35))
+        self.display_surface.blit(
+            self.ctrl_key_surf, (seed_pos.x + 70, seed_pos.y + 25)
         )
 
-        # I KEY DISPLAY (for inventory access)
-        # Position I key next to inventory icon
-        i_key_rect = self.i_key_surf.get_rect(
-            midright=(inventory_rect.left - 10, inventory_rect.centery)
-        )
-        self.display_surface.blit(self.i_key_surf, i_key_rect)
+        self.display_surface.blit(self.inventory_surf, (SCREEN_WIDTH - 80, 10))
+        self.display_surface.blit(self.i_key_surf, (SCREEN_WIDTH - 48, 80))
 
-        # Draw the inventory icon
-        self.display_surface.blit(self.inventory_surf, inventory_rect)
+        # EMOTION DISPLAY
+        if self.emotions_deque:
+            emotions_to_display = list(reversed(self.emotions_deque))
+            main_emotion_size = 64
+            old_emotion_size = 48
+            padding = 6
+            current_x = SCREEN_WIDTH - padding
+
+            for i, emotion in enumerate(emotions_to_display):
+                icon = self.emotion_icons.get(emotion)
+                if not icon:
+                    continue
+
+                if i == 0:  # Most recent emotion
+                    size = main_emotion_size
+                    scaled_icon = icon
+                    current_x -= size
+                    x_pos = current_x
+                    y_pos = SCREEN_HEIGHT - size - padding
+                    box_rect = pygame.Rect(x_pos - 4, y_pos - 4, size + 8, size + 8)
+                    pygame.draw.rect(
+                        self.display_surface,
+                        (255, 20, 147),
+                        box_rect,
+                        3,
+                        border_radius=8,
+                    )
+                    self.display_surface.blit(scaled_icon, (x_pos, y_pos))
+                    current_x -= padding
+                else:  # Older emotions
+                    size = old_emotion_size
+                    scaled_icon = pygame.transform.scale(icon, (size, size))
+                    current_x -= size
+                    x_pos = current_x
+                    y_pos = SCREEN_HEIGHT - size - padding
+                    self.display_surface.blit(scaled_icon, (x_pos, y_pos))
+                    current_x -= padding
