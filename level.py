@@ -301,6 +301,22 @@ class Level:
         )
         current_emotion = recent_emotions[0] if recent_emotions else "neutral"
 
+        # Debug: Print emotion information
+        print(f"🎭 Emotion Debug - Emotions in deque: {recent_emotions}")
+        print(f"🎭 Current emotion being sent to AI: {current_emotion}")
+        print(f"💰 Player money: ${self.player.money}")
+
+        # For testing: Add some emotions to the deque if it's empty
+        if not self.emotions_deque or len(self.emotions_deque) == 0:
+            print("🎭 No emotions detected, adding test emotion...")
+            import random
+
+            test_emotions = ["happy", "surprised", "neutral", "excited"]
+            test_emotion = random.choice(test_emotions)
+            self.emotions_deque.append(test_emotion)
+            current_emotion = test_emotion
+            print(f"🎭 Added test emotion: {test_emotion}")
+
         # Determine player context based on their money and progress
         if self.player.money > 1000:
             situation = "player has lots of money and is doing well farming"

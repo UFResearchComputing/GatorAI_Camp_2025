@@ -86,19 +86,41 @@ class AIDialogueManager:
         if self.fallback_mode or not self.client:
             return self._get_fallback_dialogue(character_name, player_context, emotion)
 
+        # Create emotion-specific guidance for the AI
+        emotion_guidance = {
+            "happy": "The player seems cheerful and upbeat. Match their positive energy and share in their good mood.",
+            "sad": "The player appears down or disappointed. Be comforting, encouraging, and offer gentle support.",
+            "angry": "The player seems frustrated or upset. Be calming, understanding, and help them feel better.",
+            "surprised": "The player looks amazed or shocked. Share in their wonder and excitement about what's happening.",
+            "fearful": "The player appears worried or anxious. Be reassuring, supportive, and help them feel safe.",
+            "neutral": "The player seems calm and focused. Be friendly and helpful in a straightforward way.",
+        }
+
+        emotion_hint = emotion_guidance.get(emotion, emotion_guidance["neutral"])
+
         prompt = f"""
         You are {character_name}, a {character_role} in a cozy farming game called PyDew Valley.
 
         Player context: {player_context}
         Player's current emotion: {emotion}
+        Emotional guidance: {emotion_hint}
 
         Generate a short, friendly dialogue response (1-2 sentences) that:
         1. Matches your character's role and personality.
-        2. Responds appropriately to the player's context and emotion.
-        3. Maintains the game's wholesome, educational, and encouraging tone.
+        2. Responds appropriately to the player's context and emotional state.
+        3. Uses the emotional guidance to tailor your response.
+        4. Maintains the game's wholesome, educational, and encouraging tone.
+
+        Important: Make sure your response clearly reflects awareness of the player's {emotion} emotional state.
 
         Dialogue:
         """
+
+        # Debug: Print the prompt being sent to AI
+        print(f"🤖 AI Prompt Debug:")
+        print(f"   Character: {character_name} ({character_role})")
+        print(f"   Context: {player_context}")
+        print(f"   Emotion: {emotion}")
 
         try:
             response = self.client.chat.completions.create(
@@ -122,14 +144,29 @@ class AIDialogueManager:
         self, character_name: str, player_context: str, emotion: str
     ) -> str:
         """Provides static fallback dialogue when the AI service is unavailable."""
-        # Simple fallback logic for Merchant Pete
+        # Simple fallback logic for Merchant Pete with emotion considerations
         if "Merchant Pete" in character_name:
-            if "rich" in player_context:
-                return "Welcome back, esteemed farmer! Your success is the talk of the valley. I have some rare items that might interest you."
-            elif "new" in player_context:
-                return "Hello there! New to PyDew Valley? Don't you worry, I've got just the tools and seeds to get you started on your farming adventure!"
+            if emotion == "happy":
+                return "I can see you're in great spirits today! That positive energy will help your crops grow beautifully. What can I get you?"
+            elif emotion == "sad":
+                return "I notice you seem a bit down, friend. Remember, every farmer has tough days, but I've got just the things to brighten your mood!"
+            elif emotion == "angry":
+                return "Take a deep breath, friend. Farming can be frustrating sometimes, but you're doing better than you think. Let me help you out."
+            elif emotion == "surprised":
+                return "You look amazed! There's always something wonderful to discover in farming. I've got some interesting items you might like!"
+            elif emotion == "fearful":
+                return "Don't worry, you're safe here with me. Farming can feel overwhelming at first, but I'll help you get what you need."
+            elif "rich" in player_context:
+                return "Welcome back, esteemed farmer! Your success is impressive. I have some premium items that might interest you."
+            elif "new" in player_context or "starting" in player_context:
+                return "Hello there! New to farming? Don't worry, I've got just the tools and seeds to get you started on your adventure!"
             else:
                 return "Welcome! It's a fine day for farming, isn't it? Let me know if you need anything."
 
-        # Generic fallback for any other NPC
-        return "Hello there! Nice to see you around the farm today."
+        # Generic fallback for any other NPC with basic emotion awareness
+        if emotion == "happy":
+            return "I can see you're having a great day! How wonderful!"
+        elif emotion == "sad":
+            return "You seem a bit down, friend. I hope things look up soon!"
+        else:
+            return "Hello there! Nice to see you around the farm today."
