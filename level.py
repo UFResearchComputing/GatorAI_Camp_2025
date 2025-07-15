@@ -232,6 +232,17 @@ class Level:
                     self.interaction_sprites,
                     obj.name,
                 )
+            
+            if obj.name == "Blacksmith":
+                # Create blacksmith interaction area
+                Interaction(
+                    (obj.x, obj.y),
+                    (obj.width, obj.height),
+                    self.interaction_sprites,
+                    obj.name,
+                )
+
+    
 
         # BACKGROUND GROUND TILE
         # Create the base ground that covers the entire map

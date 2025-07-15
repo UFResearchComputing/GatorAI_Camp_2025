@@ -195,6 +195,10 @@ class Player(pygame.sprite.Sprite):
             # Then play a watering sound effect            # Update volume settings first to ensure correct volume
             self.update_audio_volumes()
             self.watering.play()  # Play the watering sound
+    
+    def interact_with_blacksmith(self):
+        """Interact with the blacksmith NPC"""
+        print("🔨 Blacksmith: 'Welcome to my forge! I can upgrade your tools.'")
 
     def get_target_pos(self):
         """
