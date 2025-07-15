@@ -33,6 +33,7 @@ from trader_menu import TraderMenu
 import game_settings
 import os
 from dialogue_system import DialogueSystem
+from npc_characters import Blacksmith
 
 
 class Level:
@@ -242,6 +243,12 @@ class Level:
                     obj.name,
                 )
 
+                   # Create visual NPC character
+                self.blacksmith_npc = Blacksmith(
+                    (obj.x, obj.y - 20),  # Slightly above interaction area
+                    self.all_sprites
+                ) 
+
     
 
         # BACKGROUND GROUND TILE
@@ -251,6 +258,14 @@ class Level:
             surf=pygame.image.load("graphics/world/ground.png").convert_alpha(),
             groups=self.all_sprites,
             z=LAYERS["ground"],  # Put it at the bottom layer
+        )
+
+        # TEMPORARY BLACKSMITH NPC (for testing)
+        Interaction(
+        (400, 300),  # Fixed position on the map
+        (64, 64),    # Size of interaction area
+        self.interaction_sprites,
+        "Blacksmith"
         )
 
     def update_audio_volumes(self):

@@ -448,6 +448,9 @@ class Player(pygame.sprite.Sprite):
                     if collided_interaction_sprite[0].name == "Trader":
                         # Open the shop interface
                         self.toggle_shop()
+                    elif collided_interaction_sprite[0].name == "Blacksmith":
+                        # Interact with the blacksmith
+                        self.interact_with_blacksmith()
                     else:  # For beds or other objects, make the player sleep
                         self.status = "left_idle"
                         self.sleep = True
