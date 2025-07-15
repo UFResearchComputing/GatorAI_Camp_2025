@@ -1,0 +1,103 @@
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                     🎮 PYDEW VALLEY - GAME ARCHITECTURE                       ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║                               [main.py] 🚀                                   ║
+║                          ENTRY POINT & GAME LOOP                             ║
+║                        ┌─────────────────────────┐                           ║
+║                        │ • Game initialization  │                           ║
+║                        │ • Main game loop       │                           ║
+║                        │ • Event handling       │                           ║
+║                        │ • Screen management    │                           ║
+║                        └─────────────┬───────────┘                           ║
+║                                      │                                       ║
+║                    ┌─────────────────┼─────────────────┐                     ║
+║                    │                 │                 │                     ║
+║               [main_menu.py]    [level.py]       [character_screen.py]       ║
+║              MENU SYSTEM        GAME WORLD        PLAYER STATS UI            ║
+║             ┌─────────────┐    ┌─────────────┐    ┌─────────────┐             ║
+║             │ • Start     │    │ • Map mgmt  │    │ • Inventory │             ║
+║             │ • Settings  │    │ • Sprites   │    │ • Stats     │             ║
+║             │ • Credits   │    │ • Camera    │    │ • Money     │             ║
+║             └─────────────┘    └─────┬───────┘    └─────────────┘             ║
+║                                      │                                       ║
+║              ┌───────────────────────┼───────────────────────┐               ║
+║              │                       │                       │               ║
+║         [player.py]             [sprites.py]            [soil.py]            ║
+║        PLAYER CHARACTER         GAME OBJECTS          FARMING SYSTEM         ║
+║       ┌─────────────────┐      ┌─────────────┐       ┌─────────────┐         ║
+║       │ • Movement      │      │ • Trees     │       │ • Planting  │         ║
+║       │ • Animation     │      │ • Water     │       │ • Growth    │         ║
+║       │ • Tools/Seeds   │      │ • Objects   │       │ • Watering  │         ║
+║       │ • Inventory     │      │ • Particles │       │ • Harvest   │         ║
+║       └─────────────────┘      └─────────────┘       └─────────────┘         ║
+║                                      │                                       ║
+║              ┌───────────────────────┼───────────────────────┐               ║
+║              │                       │                       │               ║
+║         [overlay.py]            [sky.py]              [transition.py]        ║
+║           UI SYSTEM           WEATHER SYSTEM            DAY/NIGHT            ║
+║       ┌─────────────┐        ┌─────────────┐         ┌─────────────┐         ║
+║       │ • Tool UI   │        │ • Rain      │         │ • Sleep     │         ║
+║       │ • Seed UI   │        │ • Sky color │         │ • Reset     │         ║
+║       │ • Controls  │        │ • Particles │         │ • Effects   │         ║
+║       └─────────────┘        └─────────────┘         └─────────────┘         ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                              SUPPORTING SYSTEMS                              ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║    [settings.py]     [support.py]     [timer.py]     [installer.py]          ║
+║   GAME CONFIG      UTILITY FUNCS     TIMING SYSTEM   DEPENDENCY MGT          ║
+║  ┌─────────────┐  ┌─────────────┐   ┌─────────────┐  ┌─────────────┐          ║
+║  │ • Constants │  │ • File load │   │ • Cooldowns │  │ • Auto pip  │          ║
+║  │ • Positions │  │ • Image mgmt│   │ • Delays    │  │ • Imports   │          ║
+║  │ • Layers    │  │ • Utilities │   │ • Callbacks │  │ • Packages  │          ║
+║  └─────────────┘  └─────────────┘   └─────────────┘  └─────────────┘          ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                AI FEATURES                                   ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║    [emotion_detector.py]    [dialogue_system.py]    [ai_dialogue_manager.py] ║
+║       AI EMOTION RECOG         CONVERSATION UI            AI CHATBOT         ║
+║      ┌─────────────────┐     ┌─────────────────┐      ┌─────────────────┐     ║
+║      │ • Camera feed   │     │ • NPC dialogue  │      │ • OpenAI API    │     ║
+║      │ • CNN model     │     │ • Text display  │      │ • Context aware │     ║
+║      │ • Real-time     │     │ • Input handling│      │ • Emotion-based │     ║
+║      │ • Threading     │     │ • State machine │      │ • Dynamic text  │     ║
+║      └─────────────────┘     └─────────────────┘      └─────────────────┘     ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                               TRADING SYSTEM                                 ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║         [trader_menu.py]           [game_settings.py]                        ║
+║           SHOP INTERFACE             PERSISTENT CONFIG                       ║
+║          ┌─────────────────┐       ┌─────────────────┐                       ║
+║          │ • Buy/Sell UI   │       │ • Audio levels  │                       ║
+║          │ • Inventory mgmt│       │ • Game options  │                       ║
+║          │ • Price system │       │ • Save/Load     │                       ║
+║          │ • Navigation    │       │ • Camera setup │                       ║
+║          └─────────────────┘       └─────────────────┘                       ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📊 COMPLEXITY LEVELS:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔰 BEGINNER (⭐)       │ installer.py, settings.py                           │
+│ 🔸 INTERMEDIATE (⭐⭐)   │ timer.py, support.py, main_menu.py                  │
+│ 🔶 ADVANCED (⭐⭐⭐)     │ main.py, player.py, sprites.py, overlay.py         │
+│ 🔴 EXPERT (⭐⭐⭐⭐)     │ level.py, soil.py, dialogue_system.py              │
+│ 🚀 MASTER (⭐⭐⭐⭐⭐)   │ emotion_detector.py, ai_dialogue_manager.py         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🎯 LEARNING PATH RECOMMENDATIONS:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Week 1, Day 1: installer.py → settings.py → timer.py                       │
+│ Week 1, Day 2: main.py → player.py → sprites.py                            │
+│ Week 1, Day 3: level.py → soil.py → overlay.py                             │
+│ Week 2, Day 1: dialogue_system.py → emotion_detector.py                    │
+│ Week 2, Day 2: ai_dialogue_manager.py → custom projects                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+    

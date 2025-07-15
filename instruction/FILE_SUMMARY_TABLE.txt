@@ -1,0 +1,59 @@
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                        📁 FILE DOCUMENTATION SUMMARY                          ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║ File                   │ Level │ Purpose                              │ Type  ║
+╠════════════════════════╪═══════╪══════════════════════════════════════╪═══════╣
+║ main.py            │ ⭐⭐⭐   │ Entry point, game loop, screen manag │ Core Framework  ║
+║ level.py           │ ⭐⭐⭐⭐  │ World manager, map loading, system c │ Core Framework  ║
+║ player.py          │ ⭐⭐⭐   │ Character controller, movement, tool │ Core Framework  ║
+║ sprites.py         │ ⭐⭐⭐   │ Game objects, trees, water, interact │ Game Mechanics  ║
+║ soil.py            │ ⭐⭐⭐   │ Farming system, planting, growth, ha │ Game Mechanics  ║
+║ overlay.py         │ ⭐⭐    │ UI system, tool display, controls, H │ User Interface  ║
+║ character_screen.p │ ⭐⭐    │ Player stats, inventory display      │ User Interface  ║
+║ main_menu.py       │ ⭐⭐    │ Start screen, settings, credits navi │ User Interface  ║
+║ trader_menu.py     │ ⭐⭐⭐   │ Shop interface, buy/sell system      │ User Interface  ║
+║ settings_menu.py   │ ⭐⭐    │ Audio/camera settings interface      │ User Interface  ║
+║ sky.py             │ ⭐⭐    │ Weather effects, rain, day/night cyc │ Visual Effects  ║
+║ transition.py      │ ⭐⭐    │ Sleep transition, world reset effect │ Visual Effects  ║
+║ emotion_detector.p │ ⭐⭐⭐⭐⭐ │ AI emotion recognition, computer vis │ AI Features     ║
+║ dialogue_system.py │ ⭐⭐⭐   │ NPC conversations, text display      │ AI Features     ║
+║ ai_dialogue_manage │ ⭐⭐⭐⭐  │ OpenAI integration, dynamic response │ AI Features     ║
+║ settings.py        │ ⭐     │ Game constants, configuration, data  │ Utilities       ║
+║ support.py         │ ⭐⭐    │ Helper functions, file loading, util │ Utilities       ║
+║ timer.py           │ ⭐⭐    │ Timing system, cooldowns, delays     │ Utilities       ║
+║ installer.py       │ ⭐     │ Automatic dependency installation    │ Utilities       ║
+║ game_settings.py   │ ⭐⭐    │ Persistent settings, audio, camera c │ Configuration   ║
+╚════════════════════════╧═══════╧══════════════════════════════════════╧═══════╝
+
+📖 EDUCATIONAL CONCEPTS BY FILE:
+
+🔰 BEGINNER CONCEPTS:
+• installer.py: Imports, subprocess, package management
+• settings.py: Constants, dictionaries, data organization
+• timer.py: Basic classes, methods, callback functions
+
+🔸 INTERMEDIATE CONCEPTS:
+• main.py: Game architecture, loops, event handling
+• player.py: Complex OOP, state machines, input handling
+• sprites.py: Inheritance, polymorphism, sprite management
+• overlay.py: UI design, surface blitting, user experience
+
+🔶 ADVANCED CONCEPTS:
+• level.py: System integration, file I/O, camera systems
+• soil.py: Complex game mechanics, grid systems, progression
+• dialogue_system.py: State machines, text rendering, AI integration
+
+🚀 EXPERT CONCEPTS:
+• emotion_detector.py: Machine learning, computer vision, threading
+• ai_dialogue_manager.py: API integration, NLP, context management
+
+🎯 DEPENDENCY RELATIONSHIPS:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ main.py depends on: level.py, main_menu.py, character_screen.py            │
+│ level.py depends on: player.py, sprites.py, soil.py, overlay.py, sky.py    │
+│ player.py depends on: settings.py, timer.py, support.py                    │
+│ dialogue_system.py depends on: ai_dialogue_manager.py                      │
+│ Most files depend on: settings.py (constants), pygame (graphics)           │
+└─────────────────────────────────────────────────────────────────────────────┘
+    

@@ -1,5 +1,19 @@
 # Gator AI Summer Camp 2025
 
+## 📚 **For Instructors: Teaching Materials Available!**
+
+**Complete educational package ready to use!** All teaching materials, lesson plans, and resources are located in the **`/instruction`** folder:
+
+- 📋 **Project roadmap and architecture diagrams**
+- 📝 **Day-by-day lesson plans with exercises**
+- 📖 **File-by-file documentation and learning objectives**
+- 🎯 **Assessment strategies and troubleshooting guides**
+- 🎨 **Printable visual aids for classroom use**
+
+**➡️ [START HERE: Go to `/instruction` folder](./instruction/) ⬅️**
+
+---
+
 ## Introduction
 
 This is a draft repository for the **Gator AI Summer Camp 2025** program. The camp will teach students the basics of AI and how to apply AI to solve real-world problems.
@@ -286,6 +300,14 @@ All code in this project should be:
 
 ## Resources
 
+### 📚 **Teaching Materials**
+All comprehensive instructional materials are in the [`/instruction`](./instruction/) folder:
+- Complete lesson plans and exercises
+- Technical documentation and roadmaps  
+- Visual aids and assessment tools
+- Ready-to-use classroom materials
+
+### 🔗 **External Resources**
 - [Python Documentation](https://docs.python.org/3/)
 - Sprite Sheet Editor: [Piskel](https://www.piskelapp.com/)
 - [OpenCV Documentation](https://docs.opencv.org/)
