@@ -214,6 +214,7 @@ class Level:
                     interaction=self.interaction_sprites,
                     soil_layer=self.soil_layer,
                     toggle_shop=self.toggle_shop,
+                    toggle_blacksmith=self.toggle_blacksmith,  # Add blacksmith interaction
                 )
 
             if obj.name == "Bed":
@@ -233,7 +234,7 @@ class Level:
                     self.interaction_sprites,
                     obj.name,
                 )
-            
+
             if obj.name == "Blacksmith":
                 # Create blacksmith interaction area
                 Interaction(
@@ -243,13 +244,11 @@ class Level:
                     obj.name,
                 )
 
-                   # Create visual NPC character
+                # Create visual NPC character
                 self.blacksmith_npc = Blacksmith(
                     (obj.x, obj.y - 20),  # Slightly above interaction area
-                    self.all_sprites
-                ) 
-
-    
+                    self.all_sprites,
+                )
 
         # BACKGROUND GROUND TILE
         # Create the base ground that covers the entire map
@@ -261,12 +260,19 @@ class Level:
         )
 
         # TEMPORARY BLACKSMITH NPC (for testing)
+        print("🔨 Creating temporary Blacksmith NPC at (1200, 650)")
         Interaction(
-        (400, 300),  # Fixed position on the map
-        (64, 64),    # Size of interaction area
-        self.interaction_sprites,
-        "Blacksmith"
+            (1200, 650),  # Position near the farm area, accessible to player
+            (64, 64),  # Size of interaction area
+            self.interaction_sprites,
+            "Blacksmith",
         )
+
+        # Create visual blacksmith character
+        self.blacksmith_npc = Blacksmith(
+            (1200, 650), self.all_sprites  # Same position as interaction
+        )
+        print("🔨 Visual Blacksmith character created")
 
     def update_audio_volumes(self):
         """
@@ -376,6 +382,23 @@ class Level:
         - UI transition management
         """
         self.shop_active = True
+
+    def toggle_blacksmith(self):
+        """
+        Simple Blacksmith Interaction
+        ============================
+        Basic interaction with the blacksmith NPC for testing purposes.
+
+        EDUCATIONAL CONCEPTS:
+        - NPC interaction systems
+        - Simple dialogue output
+        - Console-based feedback
+        """
+        print("🔨 Blacksmith interaction triggered!")
+        print("Magnus the Blacksmith: 'Welcome to my forge, farmer!'")
+        print("Magnus: 'I can craft better tools for you someday!'")
+        print("Magnus: 'Bring me some metal and I'll make you something special!'")
+        # For now, just print a message - no complex menu needed yet
 
     def reset(self):
         """

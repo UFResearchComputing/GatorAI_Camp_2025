@@ -231,20 +231,154 @@ if obj.name == "Blacksmith":
 For the temporary version:
 ```python
 # TEMPORARY BLACKSMITH NPC (visual + interaction)
-interaction_pos = (400, 300)
+print("🔨 Creating temporary Blacksmith NPC at (1200, 650)")
 Interaction(
-    interaction_pos,
-    (64, 64),
+    (1200, 650),  # Position near the farm area, accessible to player
+    (64, 64),  # Size of interaction area
     self.interaction_sprites,
-    "Blacksmith"
+    "Blacksmith",
 )
 
-# Add visual character
+# Create visual blacksmith character
 self.blacksmith_npc = Blacksmith(
-    (interaction_pos[0], interaction_pos[1] - 20),
-    self.all_sprites
+    (1200, 650), self.all_sprites  # Same position as interaction
 )
+print("🔨 Visual Blacksmith character created")
 ```
+
+**Debug Changes Summary:**
+
+**1. Updated `level.py`:**
+```python
+# Added this method to Level class:
+def toggle_blacksmith(self):
+    """Simple Blacksmith Interaction"""
+    print("🔨 Blacksmith interaction triggered!")
+    print("Magnus the Blacksmith: 'Welcome to my forge, farmer!'")
+    print("Magnus: 'I can craft better tools for you someday!'")
+    print("Magnus: 'Bring me some metal and I'll make you something special!'")
+
+# Updated player creation to include blacksmith toggle:
+self.player = Player(
+    pos=(obj.x, obj.y),
+    group=self.all_sprites,
+    collision_sprites=self.collision_sprites,
+    tree_sprites=self.tree_sprites,
+    interaction=self.interaction_sprites,
+    soil_layer=self.soil_layer,
+    toggle_shop=self.toggle_shop,
+    toggle_blacksmith=self.toggle_blacksmith,  # ADDED THIS LINE
+)
+
+# Updated temporary NPC creation:
+# TEMPORARY BLACKSMITH NPC (for testing)
+print("🔨 Creating temporary Blacksmith NPC at (1200, 650)")
+Interaction(
+    (1200, 650),  # CHANGED THIS LINE, experiment with different positions
+    (64, 64),  # Size of interaction area
+    self.interaction_sprites,
+    "Blacksmith",
+)
+
+# Create visual blacksmith character
+self.blacksmith_npc = Blacksmith(
+    (1200, 650), self.all_sprites  # CHANGED THIS LINE (remember that interactions and graphics are different systems!)
+)
+print("🔨 Visual Blacksmith character created")
+```
+
+**2. Updated `npc_characters.py`:**
+Copy and paste the following code into `npc_characters.py`
+!!!Don't forget edit the "Blacksmith" class below to match your npc's name and graphics path!!!:
+```python
+# Updated to use real graphics files with proper sizing:
+import pygame
+from sprites import Generic
+from settings import LAYERS
+from support import import_folder
+
+class NPCCharacter(Generic):
+    def __init__(self, pos, character_name, groups, graphics_path=None, target_size=None):
+        self.character_name = character_name
+        
+        # Load graphics or use placeholder
+        if graphics_path:
+            try:
+                # Try to load the graphics from the specified path
+                idle_frames = import_folder(graphics_path)
+                if idle_frames:
+                    # Use the first frame as the static image
+                    npc_image = idle_frames[0]
+                    
+                    # Resize if target_size is specified
+                    if target_size:
+                        npc_image = pygame.transform.scale(npc_image, target_size)
+                        print(f"🎭 Resized {character_name} graphics to {target_size}")
+                    
+                    print(f"🎭 Loaded graphics for {character_name} from {graphics_path}")
+                else:
+                    npc_image = self._create_placeholder()
+            except Exception as e:
+                npc_image = self._create_placeholder()
+        else:
+            npc_image = self._create_placeholder()
+
+        super().__init__(pos, npc_image, groups, LAYERS["main"])
+        self.hitbox = self.rect.copy().inflate(-20, -10)
+
+    def _create_placeholder(self):
+        """Create simple placeholder for NPCs without graphics"""
+        placeholder = pygame.Surface((64, 64))
+        placeholder.fill((100, 100, 255))  # Blue background
+        # Add simple face details...
+        return placeholder
+
+class Blacksmith(NPCCharacter):
+    def __init__(self, pos, groups):
+        # Initialize with the path to blacksmith graphics and resize to match player
+        # Player size is approximately 172x124, so we use a similar size (80x120), experiment with different sizes
+        super().__init__(pos, "blacksmith", groups, "graphics/npcs/blacksmith/idle", target_size=(80, 120))
+        self.name = "Magnus the Blacksmith"
+        self.role = "tool craftsman"
+        print(f"🔨 Blacksmith Magnus created at {pos} using real graphics (resized)")
+```
+
+**3. Updated `player.py`:**
+```python
+# Updated constructor to accept blacksmith toggle:
+def __init__(
+    self,
+    pos,
+    group,
+    collision_sprites,
+    tree_sprites,
+    interaction,
+    soil_layer,
+    toggle_shop,
+    toggle_blacksmith=None,  # Added this parameter
+):
+
+# Added blacksmith toggle storage:
+self.toggle_shop = toggle_shop
+self.toggle_blacksmith = toggle_blacksmith  # Added this line
+
+# Updated interaction handling:
+elif collided_interaction_sprite[0].name == "Blacksmith":
+    # Interact with the blacksmith
+    if self.toggle_blacksmith:
+        self.toggle_blacksmith()
+    else:
+        # Fallback if no blacksmith function provided
+        self.interact_with_blacksmith()
+```
+
+**🎮 HOW TO TEST:**
+1. Run the game with `python main.py`
+2. Look for console messages about Blacksmith creation
+3. Navigate to position (1200, 650) on the map - near the Trader area
+4. You should see your NPC!
+5. Walk up to it and press Enter to interact
+6. Check console for interaction messages
 
 ---
 

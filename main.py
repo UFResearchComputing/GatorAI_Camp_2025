@@ -15,13 +15,14 @@ Educational Concepts Covered:
 from installer import install
 
 # Install required packages if they're not already installed
-install("pygame")  # Game development library
-install("pytmx")  # Map loading library
-install("kagglehub")  # Dataset library
-install("requests")  # Library for web requests
-install("opencv-python")  # Computer vision library
-install("pytorch_lightning")
-install("openai")  # AI API library for dialogue generation
+# install("pygame")  # Game development library
+# install("pytmx")  # Map loading library
+# install("kagglehub")  # Dataset library
+# install("requests")  # Library for web requests
+# install("opencv-python")  # Computer vision library
+# install("pytorch_lightning")
+# install("openai")  # AI API library for dialogue generation
+# install("torchvision")
 
 import pygame  # Main game development library
 import sys  # System operations

@@ -44,6 +44,7 @@ class Player(pygame.sprite.Sprite):
         interaction,  # Function to handle interactions
         soil_layer,  # Farming/soil system
         toggle_shop,  # Function to open/close shop
+        toggle_blacksmith=None,  # Function to interact with blacksmith
     ):
         """
         Initialize the Player - Set Up Our Character
@@ -120,7 +121,8 @@ class Player(pygame.sprite.Sprite):
         self.interaction = interaction  # Function for interacting with objects
         self.sleep = False  # Is the player sleeping?
         self.soil_layer = soil_layer  # Farming system reference
-        self.toggle_shop = toggle_shop  # Function to open/close shop        # AUDIO SYSTEM - Sound effects for player actions
+        self.toggle_shop = toggle_shop  # Function to open/close shop
+        self.toggle_blacksmith = toggle_blacksmith  # Function to interact with blacksmith        # AUDIO SYSTEM - Sound effects for player actions
         base_path = os.path.dirname(os.path.abspath(__file__))
         self.watering = pygame.mixer.Sound(os.path.join(base_path, "audio/water.mp3"))
         self.update_audio_volumes()  # Set initial volume levels
@@ -195,7 +197,7 @@ class Player(pygame.sprite.Sprite):
             # Then play a watering sound effect            # Update volume settings first to ensure correct volume
             self.update_audio_volumes()
             self.watering.play()  # Play the watering sound
-    
+
     def interact_with_blacksmith(self):
         """Interact with the blacksmith NPC"""
         print("🔨 Blacksmith: 'Welcome to my forge! I can upgrade your tools.'")
@@ -450,7 +452,11 @@ class Player(pygame.sprite.Sprite):
                         self.toggle_shop()
                     elif collided_interaction_sprite[0].name == "Blacksmith":
                         # Interact with the blacksmith
-                        self.interact_with_blacksmith()
+                        if self.toggle_blacksmith:
+                            self.toggle_blacksmith()
+                        else:
+                            # Fallback if no blacksmith function provided
+                            self.interact_with_blacksmith()
                     else:  # For beds or other objects, make the player sleep
                         self.status = "left_idle"
                         self.sleep = True
